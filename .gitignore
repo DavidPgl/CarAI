@@ -167,4 +167,7 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# CUSTOM
+./lib
+
 # End of https://www.gitignore.io/api/java,macos,windows,intellij+all
