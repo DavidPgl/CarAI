@@ -14,39 +14,20 @@ import java.nio.file.StandardOpenOption;
 import java.sql.Timestamp;
 import java.util.Random;
 
-public class CarAI extends AI {
+public abstract class CarAI extends AI {
     private Point checkpoint;
 
-    private float goalRadius = 1;
-    private float decelerateRadius = 30;
-    private float throttleTime = 2f;
+    protected float goalRadius = 1;
+    protected float decelerateRadius = 30;
+    protected float throttleTime = 2f;
 
     // In Degree
-    private float goalAngle = 1;
-    private float decelerateAngle = 90;
-    private float steerTime = 1f;
-
+    protected float goalAngle = 1;
+    protected float decelerateAngle = 90;
+    protected float steerTime = 1f;
 
     public CarAI(Info info) {
         super(info);
-        Random random = new Random();
-        goalRadius = random.nextFloat() * 10;
-        decelerateRadius = goalRadius + random.nextFloat() * 50;
-        throttleTime = 0.1f + random.nextFloat() * 5;
-
-        goalAngle = random.nextFloat() * 10;
-        decelerateAngle = goalRadius + random.nextFloat() * 135;
-        steerTime = 0.1f + random.nextFloat() * 5;
-
-        try {
-            File values = new File(System.getProperty("user.dir") + "/values.txt");
-            String data = this.getClass().getSimpleName() + ":  " + String.format("%.1f | %.1f | %.1f | %.1f | %.1f | %.1f", goalRadius, decelerateRadius, throttleTime, goalAngle, decelerateAngle, steerTime) + "\n";
-            Files.write(values.toPath(), data.getBytes(), StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        enlistForTournament(564478, 562886);
     }
 
     @Override

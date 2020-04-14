@@ -14,12 +14,12 @@ public class ClassGenerator {
     public static void main(String[] args) {
 
         for (int i = 2; i < numberOfClones + 2; i++) {
-            String newFileName = "CarAI" + i;
+            String newFileName = "Car" + i;
 
             ClassCloner.CloneFile(
-                    System.getProperty("user.dir") + "/src/s0564478/CarAI.java",
-                    System.getProperty("user.dir") + "/src/s0564478/Clones/",
-                    "CarAI",
+                    "src/s0564478/RandomCar.java",
+                    "src/s0564478/Clones/",
+                    "RandomCar",
                     newFileName,
                     ".java",
                     "s0564478.Clones");
@@ -29,7 +29,7 @@ public class ClassGenerator {
 
         // Add timestamp to file
         try {
-            File values = new File(System.getProperty("user.dir") + "/values.txt");
+            File values = new File("values.txt");
             String timeStamp = "\n" + "\n" + "\n" + new Timestamp(System.currentTimeMillis()) + "\n";
             Files.write(values.toPath(), timeStamp.getBytes(), StandardOpenOption.APPEND);
         } catch (IOException e) {
