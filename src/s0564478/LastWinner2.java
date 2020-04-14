@@ -10,14 +10,14 @@ import java.awt.*;
 public class LastWinner2 extends AI {
     private Point checkpoint;
 
-    private float goalRadius = 8.9f;
-    private float decelerateRadius = 21.1f;
-    private float throttleTime = 2.3f;
+    private float goalRadius = 1f;
+    private float decelerateRadius = 25f;
+    private float throttleTime = 2f;
 
     // In Degree
-    private float goalAngle = 4.6f;
-    private float decelerateAngle = 70.1f;
-    private float steerTime = 0.1f;
+    private float goalAngle = 1f;
+    private float decelerateAngle = 66f;
+    private float steerTime = 0.5f;
 
 
     public LastWinner2(Info info) {

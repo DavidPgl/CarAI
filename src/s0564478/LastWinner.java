@@ -15,13 +15,13 @@ import java.util.Random;
 public class LastWinner extends AI {
     private Point checkpoint;
 
-    private float goalRadius = 4.3f;
-    private float decelerateRadius = 12.9f;
-    private float throttleTime = 2.4f;
+    private float goalRadius = 4.6f;
+    private float decelerateRadius = 25.7f;
+    private float throttleTime = 5f;
 
     // In Degree
-    private float goalAngle = 3.6f;
-    private float decelerateAngle = 61.4f;
+    private float goalAngle = 5f;
+    private float decelerateAngle = 67.4f;
     private float steerTime = 0.6f;
 
 

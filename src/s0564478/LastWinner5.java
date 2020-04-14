@@ -3,49 +3,25 @@ package s0564478;
 import lenz.htw.ai4g.ai.AI;
 import lenz.htw.ai4g.ai.DriverAction;
 import lenz.htw.ai4g.ai.Info;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Vector2f;
 
 import java.awt.*;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardOpenOption;
-import java.sql.Timestamp;
-import java.util.Random;
 
-public class CarAI extends AI {
+public class LastWinner5 extends AI {
     private Point checkpoint;
 
-    private float goalRadius = 1;
-    private float decelerateRadius = 30;
-    private float throttleTime = 2f;
+    private float goalRadius = 1.8f;
+    private float decelerateRadius = 15.8f;
+    private float throttleTime = 1.2f;
 
     // In Degree
-    private float goalAngle = 1;
-    private float decelerateAngle = 90;
-    private float steerTime = 1f;
+    private float goalAngle = 1.2f;
+    private float decelerateAngle = 47.6f;
+    private float steerTime = 0.3f;
 
 
-    public CarAI(Info info) {
+    public LastWinner5(Info info) {
         super(info);
-        Random random = new Random();
-        goalRadius = random.nextFloat() * 5;
-        decelerateRadius = goalRadius + random.nextFloat() * 100;
-        throttleTime = 0.1f + random.nextFloat() * 5;
-
-        goalAngle = random.nextFloat() * 10;
-        decelerateAngle = goalRadius + random.nextFloat() * 135;
-        steerTime = 0.1f + random.nextFloat() * 5;
-
-        try {
-            File values = new File(System.getProperty("user.dir") + "/values.txt");
-            String data = this.getClass().getSimpleName() + ":  " + String.format("%.1f | %.1f | %.1f | %.1f | %.1f | %.1f", goalRadius, decelerateRadius, throttleTime, goalAngle, decelerateAngle, steerTime) + "\n";
-            Files.write(values.toPath(), data.getBytes(), StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         enlistForTournament(564478, 562886);
     }
 
