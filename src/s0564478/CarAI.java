@@ -5,42 +5,37 @@ import lenz.htw.ai4g.ai.DriverAction;
 import lenz.htw.ai4g.ai.Info;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.vector.Vector2f;
+import s0564478.util.Pair;
+import s0564478.util.VectorUtil;
 
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.sql.Timestamp;
-import java.util.Random;
 
 public class CarAI extends AI {
     private Point checkpoint;
 
-    private float goalRadius = 1.8f;
-    private float decelerateRadius = 15.8f;
-    private float throttleTime = 1.2f;
+    private static final float goalRadius = 1.8f;
+    private static final float decelerateRadius = 15.8f;
+    private static final float throttleTime = 1.2f;
 
     // In Degree
-    private float goalAngle = 1.2f;
-    private float decelerateAngle = 47.6f;
-    private float steerTime = 0.3f;
+    private static final float goalAngle = 1.2f;
+    private static final float decelerateAngle = 47.6f;
+    private static final float steerTime = 0.3f;
 
-    private Vector2f obstacleDirection = new Vector2f(0, 0);
-    private Vector2f orthDirection = new Vector2f(0, 0);
-    private Line closestLine = null;
-    private Line carLine = new Line(0, 0, 0, 0);
+    private static final float collisionAvoidanceRadius = 50.0f;
+
+    private Line closestObstacleLine = null;
+
+    // Debug stuff
+    private Vector2f checkpointDirection = new Vector2f(0, 0);
+    private Vector2f avoidanceDirection = new Vector2f(0, 0);
 
     public CarAI(Info info) {
         super(info);
-//        Random random = new Random();
-//        goalRadius = random.nextFloat() * 5;
-//        decelerateRadius = goalRadius + random.nextFloat() * 100;
-//        throttleTime = 0.1f + random.nextFloat() * 5;
-//
-//        goalAngle = random.nextFloat() * 10;
-//        decelerateAngle = goalRadius + random.nextFloat() * 135;
-//        steerTime = 0.1f + random.nextFloat() * 5;
 
         try {
             File values = new File(System.getProperty("user.dir") + "/values.txt");
@@ -63,13 +58,22 @@ public class CarAI extends AI {
         checkpoint = info.getCurrentCheckpoint();
 
         Vector2f checkpointDirection = new Vector2f((float) checkpoint.getX() - info.getX(), (float) checkpoint.getY() - info.getY());
+        Pair<Vector2f, Double> collisionAvoidance = getCollisionAvoidance();
+
+        // --- DEBUG ONLY ---
+        this.checkpointDirection = checkpointDirection.normalise(null);
+        avoidanceDirection = collisionAvoidance == null ? new Vector2f(0, 0) : collisionAvoidance.getFirst().normalise(null);
+        // ------------------
+
         float steering = getSteering(checkpointDirection);
-        Vector2f orthogonalDirection = getCollisionAvoidance(20);
-        orthDirection = orthogonalDirection == null ? new Vector2f(0, 0) : orthogonalDirection;
 
-        float obstacleSteering = getSteering(orthogonalDirection);
+        if (collisionAvoidance != null) {
+            float avoidanceSteering = getSteering(collisionAvoidance.getFirst());
+            double weight = collisionAvoidance.getSecond() / collisionAvoidanceRadius;
+            steering = (float) (steering * weight + avoidanceSteering * (1 - weight));
+        }
 
-        return new DriverAction(getThrottle(), obstacleSteering != 0 ? obstacleSteering : steering);
+        return new DriverAction(getThrottle(), steering);
     }
 
     @Override
@@ -91,16 +95,13 @@ public class CarAI extends AI {
     }
 
     private float getSteering(Vector2f destinationDirection) {
-        if (destinationDirection == null)
-            return 0;
-
         Vector2f carDirection = getCarDirection();
-
+        // Get angle between current and destination direction
         double diffAngle = Vector2f.angle(carDirection, destinationDirection);
         diffAngle = Math.toDegrees(diffAngle);
-
         boolean angleIsNegative = angleIsNegative(carDirection, destinationDirection);
 
+        // Calculate steering velocity
         if (diffAngle < goalAngle)
             return 0;
         else if (diffAngle < decelerateAngle) {
@@ -121,13 +122,13 @@ public class CarAI extends AI {
     }
 
 
-    private Vector2f getCollisionAvoidance(double minimumDistance) {
+    private Pair<Vector2f, Double> getCollisionAvoidance() {
         Polygon[] polygons = info.getTrack().getObstacles();
         Vector2f carDirection = getCarDirection();
-        carLine = new Line(info.getX(), info.getY(), info.getX() + carDirection.getX(), info.getY() + carDirection.getY());
+        Line carLine = new Line(info.getX(), info.getY(), info.getX() + carDirection.getX(), info.getY() + carDirection.getY());
 
         // Get closest obstacle
-        closestLine = null;
+        closestObstacleLine = null;
         double closestDistance = Double.POSITIVE_INFINITY;
         for (Polygon polygon : polygons) {
             for (int i = 0; i < polygon.npoints; i++) {
@@ -146,8 +147,8 @@ public class CarAI extends AI {
                 if (obstacleLine.m == 0) {
                     if (valueBetween(x, obstacleLine.x1, obstacleLine.x2)) {
                         double distance = Point.distance(x, y, info.getX(), info.getY());
-                        if (distance <= minimumDistance && distance < closestDistance) {
-                            closestLine = obstacleLine;
+                        if (distance <= collisionAvoidanceRadius && distance < closestDistance) {
+                            closestObstacleLine = obstacleLine;
                             closestDistance = distance;
 
                         }
@@ -155,10 +156,12 @@ public class CarAI extends AI {
                 }
                 // Vertical line -> Check only y
                 else if (Math.abs(obstacleLine.m) == Double.MAX_VALUE) {
-                    if(valueBetween(y, obstacleLine.y1, obstacleLine.y2)) {
+                    x = obstacleLine.x1;
+                    y = carLine.m * x + carLine.b;
+                    if (valueBetween(y, obstacleLine.y1, obstacleLine.y2)) {
                         double distance = Point.distance(x, y, info.getX(), info.getY());
-                        if (distance <= minimumDistance && distance < closestDistance) {
-                            closestLine = obstacleLine;
+                        if (distance <= collisionAvoidanceRadius && distance < closestDistance) {
+                            closestObstacleLine = obstacleLine;
                             closestDistance = distance;
                         }
                     }
@@ -166,8 +169,8 @@ public class CarAI extends AI {
                 // Check both
                 else if (valueBetween(x, obstacleLine.x1, obstacleLine.x2) || valueBetween(y, obstacleLine.y1, obstacleLine.y2)) {
                     double distance = Point.distance(x, y, info.getX(), info.getY());
-                    if (distance <= minimumDistance && distance < closestDistance) {
-                        closestLine = obstacleLine;
+                    if (distance <= collisionAvoidanceRadius && distance < closestDistance) {
+                        closestObstacleLine = obstacleLine;
                         closestDistance = distance;
                     }
                 }
@@ -175,25 +178,28 @@ public class CarAI extends AI {
         }
 
         // No obstacle in reach
-        if (closestLine == null) {
-            obstacleDirection = new Vector2f(0, 0);
+        if (closestObstacleLine == null)
             return null;
+
+        // Calculate the orthogonal vector to use for collision avoidance for found obstacle
+        Vector2f obsDirection = closestObstacleLine.getDirection();
+
+        Vector2f orth1;
+        Vector2f orth2;
+        if (Math.abs(closestObstacleLine.m) == Double.MAX_VALUE) {
+            orth1 = new Vector2f(-1, 0);
+            orth2 = new Vector2f(1, 0);
+        } else {
+            orth1 = new Vector2f(-obsDirection.getY(), obsDirection.getX());
+            orth2 = new Vector2f(obsDirection.getY(), -obsDirection.getX());
         }
-
-
-        Vector2f obsDirection = closestLine.getDirection();
-        obstacleDirection = obsDirection;
-
-        Vector2f orth1 = new Vector2f(-obsDirection.getY(), obsDirection.getX());
-        Vector2f orth2 = new Vector2f(obsDirection.getY(), -obsDirection.getX());
-        Vector2f center = closestLine.getCenter();
+        Vector2f center = closestObstacleLine.getCenter();
 
         if (Point.distance(info.getX(), info.getY(), orth1.getX() + center.getX(), orth1.getY() + center.getY()) <
                 Point.distance(info.getX(), info.getY(), orth2.getX() + center.getX(), orth2.getY() + center.getY()))
-            return orth1;
+            return new Pair<>(orth1, closestDistance);
         else
-            return orth2;
-
+            return new Pair<>(orth2, closestDistance);
     }
 
     private boolean valueBetween(double value, double a, double b) {
@@ -224,41 +230,30 @@ public class CarAI extends AI {
         }
 
         public Vector2f getCenter() {
-            return new Vector2f((float)(x1 + x2) / 2f, (float)(y1 + y2) / 2f);
+            return new Vector2f((float) (x1 + x2) / 2f, (float) (y1 + y2) / 2f);
         }
     }
 
     @Override
     public void doDebugStuff() {
+        Vector2f carPosition = new Vector2f(info.getX(), info.getY());
+        drawLine(carPosition, checkpointDirection, Color.GREEN);
+        drawLine(carPosition, avoidanceDirection, Color.RED);
 
-        // Obstacle direction
+        // Current obstacle
+        if (closestObstacleLine != null)
+            drawLine(closestObstacleLine.x1, closestObstacleLine.y1, closestObstacleLine.x2, closestObstacleLine.y2, Color.WHITE);
+    }
+
+    private void drawLine(Vector2f point, Vector2f direction, Color color) {
+        drawLine(point.x, point.y, point.x + direction.x * 10, point.y + direction.y * 10, color);
+    }
+
+    private void drawLine(double x1, double y1, double x2, double y2, Color color) {
         GL11.glBegin(GL11.GL_LINES);
-        GL11.glColor3f(1, 0, 0);
-        GL11.glVertex2f(info.getX(), info.getY());
-        GL11.glVertex2d(info.getX() + obstacleDirection.getX() * 10, info.getY() + obstacleDirection.getY() * 10);
+        GL11.glColor3f(color.getRed(), color.getGreen(), color.getBlue());
+        GL11.glVertex2d(x1, y1);
+        GL11.glVertex2d(x2, y2);
         GL11.glEnd();
-
-        // Orthogonal direction
-        GL11.glBegin(GL11.GL_LINES);
-        GL11.glColor3f(0, 1, 0);
-        GL11.glVertex2f(info.getX(), info.getY());
-        GL11.glVertex2d(info.getX() + orthDirection.getX() * 10, info.getY() + orthDirection.getY() * 10);
-        GL11.glEnd();
-
-        // Car direction
-        GL11.glBegin(GL11.GL_LINES);
-        GL11.glColor3f(0, 0, 1);
-        GL11.glVertex2d(carLine.x1, carLine.y1);
-        GL11.glVertex2d(carLine.x2 + carLine.getDirection().getX() * 10, carLine.y2 + carLine.getDirection().getY() * 10);
-        GL11.glEnd();
-
-        // Current obstacle in view
-        if (closestLine != null) {
-            GL11.glBegin(GL11.GL_LINES);
-            GL11.glColor3f(1, 1, 1);
-            GL11.glVertex2d(closestLine.x1, closestLine.y1);
-            GL11.glVertex2d(closestLine.x2, closestLine.y2);
-            GL11.glEnd();
-        }
     }
 }

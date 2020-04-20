@@ -22,7 +22,7 @@ public class LastWinner4 extends AI {
 
     public LastWinner4(Info info) {
         super(info);
-        enlistForTournament(564478, 562886);
+        //enlistForTournament(564478, 562886);
     }
 
     @Override
