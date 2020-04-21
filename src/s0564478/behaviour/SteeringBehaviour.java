@@ -4,11 +4,13 @@ import lenz.htw.ai4g.ai.Info;
 import org.lwjgl.util.vector.Vector2f;
 import s0564478.CarAI;
 import s0564478.util.GLUtil;
+import s0564478.util.Line;
 import s0564478.util.Pair;
 
 import java.awt.*;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
 public class SteeringBehaviour {
@@ -16,7 +18,7 @@ public class SteeringBehaviour {
     private static final float decelerateAngle = 47.6f;
     private static final float steerTime = 0.3f;
 
-    private static final double collisionAvoidanceRadius = 30.0d;
+    private static final double collisionAvoidanceRadius = 50.0d;
 
     private Vector2f checkpointDirection = null;
     // Left: false | Right: true
@@ -91,7 +93,6 @@ public class SteeringBehaviour {
 
         Area circleArea = new Area(circle);
 
-
         // Get obstacle in reach
         Vector2f polygonDirection = null;
         boolean preventBeingStuck = false;
@@ -102,6 +103,7 @@ public class SteeringBehaviour {
             if (polygonArea.isEmpty())
                 continue;
             Rectangle2D boundings = polygonArea.getBounds2D();
+            //ai.addDebugAction(() -> GLUtil.drawLine(info.getX(), info.getY(), boundings.getCenterX(), boundings.getCenterY(), Color.WHITE));
             Vector2f currentPolygonDirection = new Vector2f((float) boundings.getCenterX() - info.getX(), (float) boundings.getCenterY() - info.getY());
 
             if (currentPolygonDirection.lengthSquared() > squareDistance)
@@ -120,15 +122,66 @@ public class SteeringBehaviour {
 
         System.out.println(polygonDirection.length());
 
-
         Vector2f orth1 = new Vector2f(-polygonDirection.getY(), polygonDirection.getX());
         Vector2f orth2 = new Vector2f(polygonDirection.getY(), -polygonDirection.getX());
         if (!preventBeingStuck)
             lastObstacle.setSecond(Vector2f.angle(checkpointDirection, orth1) < Vector2f.angle(checkpointDirection, orth2));
 
         return new Pair<>(lastObstacle.getSecond() ? orth1 : orth2, (double) polygonDirection.length());
+    }
 
+    private Point2D.Double getClosestIntersection(Polygon polygon, Line line) {
+        double closestDistance = Double.MAX_VALUE;
+        Point2D.Double closestPoint = null;
 
+        for (int i = 0; i < polygon.npoints; i++) {
+            Line polygonLine = new Line(polygon.xpoints[i], polygon.ypoints[i], polygon.xpoints[i % polygon.npoints], polygon.ypoints[i % polygon.npoints]);
+            Point2D.Double intersection = intersect(line, polygonLine);
+            if (intersection == null)
+                continue;
+
+            double distance = Point.distance(intersection.x, intersection.y, info.getX(), info.getY());
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestPoint = intersection;
+            }
+        }
+
+        return closestPoint;
+    }
+
+    private Point2D.Double intersect(Line first, Line second) {
+        // Parallel or on-top of each other
+        if (first.getM() == second.getM())
+            return null;
+
+        double x = (first.getB() - second.getB()) / (second.getM() - first.getM());
+        double y = first.getM() * x + first.getB();
+
+        // Horizontal line -> Check only x
+        if (second.getM() == 0) {
+            if (valueBetween(x, second.getX1(), second.getX2())) {
+                return new Point2D.Double(x, y);
+            }
+        }
+        // Vertical line -> Check only y
+        else if (Math.abs(second.getM()) == Double.MAX_VALUE) {
+            x = second.getX1();
+            y = first.getM() * x + first.getB();
+            if (valueBetween(y, second.getY1(), second.getY2())) {
+                return new Point2D.Double(x, y);
+            }
+        }
+        // Check both
+        else if (valueBetween(x, second.getX1(), second.getX2()) || valueBetween(y, second.getY1(), second.getY2())) {
+            return new Point2D.Double(x, y);
+        }
+
+        return null;
+    }
+
+    private boolean valueBetween(double value, double a, double b) {
+        return (value >= a && value <= b) || (value <= a && value >= b);
     }
 
     private void doDebugStuff() {
