@@ -120,14 +120,20 @@ public class SteeringBehaviour {
         if (polygonDirection == null)
             return null;
 
-        System.out.println(polygonDirection.length());
 
         Vector2f orth1 = new Vector2f(-polygonDirection.getY(), polygonDirection.getX());
         Vector2f orth2 = new Vector2f(polygonDirection.getY(), -polygonDirection.getX());
         if (!preventBeingStuck)
             lastObstacle.setSecond(Vector2f.angle(checkpointDirection, orth1) < Vector2f.angle(checkpointDirection, orth2));
 
-        return new Pair<>(lastObstacle.getSecond() ? orth1 : orth2, (double) polygonDirection.length());
+        // Calculate distance to intersection
+        Line line = new Line(info.getX(), info.getY(), info.getX() + polygonDirection.getX(), info.getY() + polygonDirection.getY());
+        Point2D intersection = getClosestIntersection(lastObstacle.getFirst(), line);
+
+        double distance = intersection.distance(info.getX(), info.getY());
+        System.out.println(distance);
+
+        return new Pair<>(lastObstacle.getSecond() ? orth1 : orth2, distance);
     }
 
     private Point2D.Double getClosestIntersection(Polygon polygon, Line line) {
