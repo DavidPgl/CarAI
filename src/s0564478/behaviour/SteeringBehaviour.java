@@ -141,7 +141,7 @@ public class SteeringBehaviour {
         Point2D.Double closestPoint = null;
 
         for (int i = 0; i < polygon.npoints; i++) {
-            Line polygonLine = new Line(polygon.xpoints[i], polygon.ypoints[i], polygon.xpoints[i % polygon.npoints], polygon.ypoints[i % polygon.npoints]);
+            Line polygonLine = new Line(polygon.xpoints[i], polygon.ypoints[i], polygon.xpoints[(i + 1) % polygon.npoints], polygon.ypoints[(i + 1) % polygon.npoints]);
             Point2D.Double intersection = intersect(line, polygonLine);
             if (intersection == null)
                 continue;
@@ -164,22 +164,17 @@ public class SteeringBehaviour {
         double x = (first.getB() - second.getB()) / (second.getM() - first.getM());
         double y = first.getM() * x + first.getB();
 
-        // Horizontal line -> Check only x
-        if (second.getM() == 0) {
-            if (valueBetween(x, second.getX1(), second.getX2())) {
-                return new Point2D.Double(x, y);
-            }
-        }
-        // Vertical line -> Check only y
-        else if (Math.abs(second.getM()) == Double.MAX_VALUE) {
+        // If either line is vertical, fix value calculation
+        if (Math.abs(first.getM()) == Double.MAX_VALUE) {
+            x = first.getX1();
+            y = second.getM() * x + second.getB();
+        } else if (Math.abs(second.getM()) == Double.MAX_VALUE) {
             x = second.getX1();
             y = first.getM() * x + first.getB();
-            if (valueBetween(y, second.getY1(), second.getY2())) {
-                return new Point2D.Double(x, y);
-            }
         }
-        // Check both
-        else if (valueBetween(x, second.getX1(), second.getX2()) || valueBetween(y, second.getY1(), second.getY2())) {
+
+        // Check if intersection is part of line
+        if (valueBetween(x, second.getX1(), second.getX2()) && valueBetween(y, second.getY1(), second.getY2())) {
             return new Point2D.Double(x, y);
         }
 
