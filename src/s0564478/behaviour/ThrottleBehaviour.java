@@ -1,6 +1,7 @@
 package s0564478.behaviour;
 
 import lenz.htw.ai4g.ai.Info;
+import s0564478.CarAI;
 
 public class ThrottleBehaviour {
     private static final float goalRadius = 1.8f;
@@ -8,9 +9,11 @@ public class ThrottleBehaviour {
     private static final float throttleTime = 1.2f;
 
     private final Info info;
+    private final CarAI ai;
 
-    public ThrottleBehaviour(Info info) {
+    public ThrottleBehaviour(Info info, CarAI ai) {
         this.info = info;
+        this.ai = ai;
     }
 
     public float getThrottle() {

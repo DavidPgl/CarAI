@@ -2,6 +2,8 @@ package s0564478.behaviour;
 
 import lenz.htw.ai4g.ai.Info;
 import org.lwjgl.util.vector.Vector2f;
+import s0564478.CarAI;
+import s0564478.util.GLUtil;
 import s0564478.util.Line;
 import s0564478.util.Pair;
 
@@ -15,17 +17,28 @@ public class SteeringBehaviour {
     private static final float collisionAvoidanceRadius = 50.0f;
 
     private final Info info;
+    private final CarAI ai;
 
-    public SteeringBehaviour(Info info) {
+    Line closestObstacleLine = null;
+
+    // Debug stuff
+    Vector2f checkpointDirection = new Vector2f(0, 0);
+    Vector2f avoidanceDirection = new Vector2f(0, 0);
+
+    public SteeringBehaviour(Info info, CarAI ai) {
         this.info = info;
+        this.ai = ai;
     }
 
     public float getSteering() {
         Point checkpoint = info.getCurrentCheckpoint();
-        Vector2f checkpointDirection = new Vector2f((float) checkpoint.getX() - info.getX(), (float) checkpoint.getY() - info.getY());
+        checkpointDirection = new Vector2f((float) checkpoint.getX() - info.getX(), (float) checkpoint.getY() - info.getY());
 
         float steering = getSteeringTo(checkpointDirection);
         Pair<Vector2f, Double> collisionAvoidance = getCollisionAvoidance();
+
+        avoidanceDirection = collisionAvoidance == null ? new Vector2f(0, 0) : collisionAvoidance.getFirst();
+        doDebugStuff();
 
         if (collisionAvoidance != null) {
             float avoidanceSteering = getSteeringTo(collisionAvoidance.getFirst());
@@ -69,7 +82,6 @@ public class SteeringBehaviour {
         Line carLine = new Line(info.getX(), info.getY(), info.getX() + carDirection.getX(), info.getY() + carDirection.getY());
 
         // Get closest obstacle
-        Line closestObstacleLine = null;
         double closestDistance = Double.POSITIVE_INFINITY;
         for (Polygon polygon : polygons) {
             for (int i = 0; i < polygon.npoints; i++) {
@@ -144,5 +156,17 @@ public class SteeringBehaviour {
 
     private boolean valueBetween(double value, double a, double b) {
         return (value >= a && value <= b) || (value <= a && value >= b);
+    }
+
+    private void doDebugStuff() {
+        ai.addDebugAction(() -> {
+            Vector2f carPosition = new Vector2f(info.getX(), info.getY());
+            GLUtil.drawLine(carPosition, checkpointDirection, Color.GREEN);
+            GLUtil.drawLine(carPosition, avoidanceDirection, Color.RED);
+
+            // Current obstacle
+            if (closestObstacleLine != null)
+                GLUtil.drawLine(closestObstacleLine.getX1(), closestObstacleLine.getY1(), closestObstacleLine.getX2(), closestObstacleLine.getY2(), Color.WHITE);
+        });
     }
 }
