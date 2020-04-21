@@ -4,25 +4,28 @@ import lenz.htw.ai4g.ai.Info;
 import org.lwjgl.util.vector.Vector2f;
 import s0564478.CarAI;
 import s0564478.util.GLUtil;
-import s0564478.util.Line;
 import s0564478.util.Pair;
 
 import java.awt.*;
+import java.awt.geom.Area;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Rectangle2D;
 
 public class SteeringBehaviour {
     private static final float goalAngle = 1.2f;
     private static final float decelerateAngle = 47.6f;
     private static final float steerTime = 0.3f;
 
-    private static final float collisionAvoidanceRadius = 50.0f;
+    private static final double collisionAvoidanceRadius = 30.0d;
+
+    private Vector2f checkpointDirection = null;
+    // Left: false | Right: true
+    private final Pair<Polygon, Boolean> lastObstacle = new Pair<>(null, false);
 
     private final Info info;
     private final CarAI ai;
 
-    Line closestObstacleLine = null;
-
     // Debug stuff
-    Vector2f checkpointDirection = new Vector2f(0, 0);
     Vector2f avoidanceDirection = new Vector2f(0, 0);
 
     public SteeringBehaviour(Info info, CarAI ai) {
@@ -76,86 +79,56 @@ public class SteeringBehaviour {
         return new Vector2f((float) Math.cos(orientation), (float) Math.sin(orientation));
     }
 
+
     private Pair<Vector2f, Double> getCollisionAvoidance() {
         Polygon[] polygons = info.getTrack().getObstacles();
-        Vector2f carDirection = getCarDirection();
-        Line carLine = new Line(info.getX(), info.getY(), info.getX() + carDirection.getX(), info.getY() + carDirection.getY());
 
-        // Get closest obstacle
-        double closestDistance = Double.POSITIVE_INFINITY;
+        Ellipse2D circle = new Ellipse2D.Double(
+                info.getX() - collisionAvoidanceRadius,
+                info.getY() - collisionAvoidanceRadius,
+                collisionAvoidanceRadius * 2,
+                collisionAvoidanceRadius * 2);
+
+        Area circleArea = new Area(circle);
+
+
+        // Get obstacle in reach
+        Vector2f polygonDirection = null;
+        boolean preventBeingStuck = false;
+        double squareDistance = Double.MAX_VALUE;
         for (Polygon polygon : polygons) {
-            for (int i = 0; i < polygon.npoints; i++) {
-                Line obstacleLine = new Line(polygon.xpoints[i], polygon.ypoints[i], polygon.xpoints[(i + 1) % polygon.npoints], polygon.ypoints[(i + 1) % polygon.npoints]);
-                double distance = intersects(carLine, obstacleLine);
-                if (distance > 0 && distance <= collisionAvoidanceRadius && distance < closestDistance) {
-                    closestObstacleLine = obstacleLine;
-                    closestDistance = distance;
-                }
-            }
+            Area polygonArea = new Area(polygon);
+            polygonArea.intersect(circleArea);
+            if (polygonArea.isEmpty())
+                continue;
+            Rectangle2D boundings = polygonArea.getBounds2D();
+            Vector2f currentPolygonDirection = new Vector2f((float) boundings.getCenterX() - info.getX(), (float) boundings.getCenterY() - info.getY());
+
+            if (currentPolygonDirection.lengthSquared() > squareDistance)
+                continue;
+
+            polygonDirection = currentPolygonDirection;
+            squareDistance = polygonDirection.lengthSquared();
+            // Prevent switching directions while in front of same polygon
+            if (lastObstacle.getFirst() == polygon)
+                preventBeingStuck = true;
+            lastObstacle.setFirst(polygon);
         }
 
-        // No obstacle in reach
-        if (closestObstacleLine == null)
+        if (polygonDirection == null)
             return null;
 
-        // Calculate the orthogonal vector to use for collision avoidance for found obstacle
-        Vector2f obsDirection = closestObstacleLine.getDirection();
+        System.out.println(polygonDirection.length());
 
-        Vector2f orth1;
-        Vector2f orth2;
-        if (Math.abs(closestObstacleLine.getM()) == Double.MAX_VALUE) {
-            orth1 = new Vector2f(-1, 0);
-            orth2 = new Vector2f(1, 0);
-        } else {
-            orth1 = new Vector2f(-obsDirection.getY(), obsDirection.getX());
-            orth2 = new Vector2f(obsDirection.getY(), -obsDirection.getX());
-        }
-        Vector2f center = closestObstacleLine.getCenter();
 
-        if (Point.distance(info.getX(), info.getY(), orth1.getX() + center.getX(), orth1.getY() + center.getY()) <
-                Point.distance(info.getX(), info.getY(), orth2.getX() + center.getX(), orth2.getY() + center.getY()))
-            return new Pair<>(orth1, closestDistance);
-        else
-            return new Pair<>(orth2, closestDistance);
-    }
+        Vector2f orth1 = new Vector2f(-polygonDirection.getY(), polygonDirection.getX());
+        Vector2f orth2 = new Vector2f(polygonDirection.getY(), -polygonDirection.getX());
+        if (!preventBeingStuck)
+            lastObstacle.setSecond(Vector2f.angle(checkpointDirection, orth1) < Vector2f.angle(checkpointDirection, orth2));
 
-    /**
-     * Checks if two lines intersect each other.
-     * @param first The first line
-     * @param second The second line
-     * @return The distance to the intersection
-     */
-    private double intersects(Line first, Line second) {
-        // Parallel or on-top of each other
-        if (first.getM() == second.getM())
-            return -1;
+        return new Pair<>(lastObstacle.getSecond() ? orth1 : orth2, (double) polygonDirection.length());
 
-        double x = (first.getB() - second.getB()) / (second.getM() - first.getM());
-        double y = first.getM() * x + first.getB();
 
-        // Horizontal line -> Check only x
-        if (second.getM() == 0) {
-            if (valueBetween(x, second.getX1(), second.getX2())) {
-                return Point.distance(x, y, info.getX(), info.getY());
-            }
-        }
-        // Vertical line -> Check only y
-        else if (Math.abs(second.getM()) == Double.MAX_VALUE) {
-            x = second.getX1();
-            y = first.getM() * x + first.getB();
-            if (valueBetween(y, second.getY1(), second.getY2())) {
-                return Point.distance(x, y, info.getX(), info.getY());
-            }
-        }
-        // Check both
-        else if (valueBetween(x, second.getX1(), second.getX2()) || valueBetween(y, second.getY1(), second.getY2())) {
-            return Point.distance(x, y, info.getX(), info.getY());
-        }
-        return -1;
-    }
-
-    private boolean valueBetween(double value, double a, double b) {
-        return (value >= a && value <= b) || (value <= a && value >= b);
     }
 
     private void doDebugStuff() {
@@ -163,10 +136,11 @@ public class SteeringBehaviour {
             Vector2f carPosition = new Vector2f(info.getX(), info.getY());
             GLUtil.drawLine(carPosition, checkpointDirection, Color.GREEN);
             GLUtil.drawLine(carPosition, avoidanceDirection, Color.RED);
+            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
+            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
+            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
+            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
 
-            // Current obstacle
-            if (closestObstacleLine != null)
-                GLUtil.drawLine(closestObstacleLine.getX1(), closestObstacleLine.getY1(), closestObstacleLine.getX2(), closestObstacleLine.getY2(), Color.WHITE);
         });
     }
 }

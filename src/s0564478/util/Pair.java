@@ -1,8 +1,8 @@
 package s0564478.util;
 
 public class Pair<T, U> {
-    private final T first;
-    private final U second;
+    private T first;
+    private U second;
 
     public Pair(T first, U second) {
         this.first = first;
@@ -15,5 +15,13 @@ public class Pair<T, U> {
 
     public U getSecond() {
         return second;
+    }
+
+    public void setFirst(T first) {
+        this.first = first;
+    }
+
+    public void setSecond(U second) {
+        this.second = second;
     }
 }

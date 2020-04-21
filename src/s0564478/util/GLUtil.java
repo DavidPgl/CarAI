@@ -7,8 +7,13 @@ import java.awt.*;
 
 public class GLUtil {
     public static void drawLine(Vector2f point, Vector2f direction, Color color) {
-        direction.normalise(direction);
-        drawLine(point.x, point.y, point.x + direction.x * 10, point.y + direction.y * 10, color);
+        drawLine(point, direction, color, true);
+    }
+
+    public static void drawLine(Vector2f point, Vector2f direction, Color color, boolean normalise) {
+        if (normalise)
+            direction.normalise(direction);
+        drawLine(point.x, point.y, point.x + direction.x * (normalise ? 10 : 1), point.y + direction.y * (normalise ? 10 : 1), color);
     }
 
     public static void drawLine(double x1, double y1, double x2, double y2, Color color) {
