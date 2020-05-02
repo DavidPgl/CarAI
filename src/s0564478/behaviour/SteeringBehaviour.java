@@ -14,25 +14,51 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
 public class SteeringBehaviour {
-    private static final float goalAngle = 1.3f;
-    private static final float decelerateAngle = 47.1f;
-    private static final float steerTime = 0.7f;
+    private final Info info;
+    //private final CarAI ai;
 
-    private static final double collisionAvoidanceRadius = 50.0d;
+    //Values
+    private float goalAngle = 1.3f;
+    private float decelerateAngle = 47.1f;
+    private float steerTime = 0.7f;
+    private double collisionAvoidanceRadius = 50.0d;
 
     private Vector2f checkpointDirection = null;
     // Left: false | Right: true
     private final Pair<Polygon, Boolean> lastObstacle = new Pair<>(null, false);
 
-    private final Info info;
-    private final CarAI ai;
+
 
     // Debug stuff
     Vector2f avoidanceDirection = new Vector2f(0, 0);
 
     public SteeringBehaviour(Info info, CarAI ai) {
         this.info = info;
-        this.ai = ai;
+        //this.ai = ai;
+    }
+
+    public SteeringBehaviour(Info info, float goalAngle, float decelerateAngle, float steerTime, double collisionAvoidanceRadius) {
+        this.info = info;
+        this.goalAngle = goalAngle;
+        this.decelerateAngle = decelerateAngle;
+        this.steerTime = steerTime;
+        this.collisionAvoidanceRadius = collisionAvoidanceRadius;
+    }
+
+    public float getGoalAngle() {
+        return goalAngle;
+    }
+
+    public float getDecelerateAngle() {
+        return decelerateAngle;
+    }
+
+    public float getSteerTime() {
+        return steerTime;
+    }
+
+    public double getCollisionAvoidanceRadius() {
+        return collisionAvoidanceRadius;
     }
 
     public float getSteering() {
@@ -43,7 +69,7 @@ public class SteeringBehaviour {
         Pair<Vector2f, Double> collisionAvoidance = getCollisionAvoidance();
 
         avoidanceDirection = collisionAvoidance == null ? new Vector2f(0, 0) : collisionAvoidance.getFirst();
-        doDebugStuff();
+        //doDebugStuff();
 
         if (collisionAvoidance != null) {
             float avoidanceSteering = getSteeringTo(collisionAvoidance.getFirst());
@@ -187,16 +213,16 @@ public class SteeringBehaviour {
         return (value >= a && value <= b) || (value <= a && value >= b);
     }
 
-    private void doDebugStuff() {
-        ai.addDebugAction(() -> {
-            Vector2f carPosition = new Vector2f(info.getX(), info.getY());
-            GLUtil.drawLine(carPosition, checkpointDirection, Color.GREEN);
-            GLUtil.drawLine(carPosition, avoidanceDirection, Color.RED);
-            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
-            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
-            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
-            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
-
-        });
-    }
+//    private void doDebugStuff() {
+//        ai.addDebugAction(() -> {
+//            Vector2f carPosition = new Vector2f(info.getX(), info.getY());
+//            GLUtil.drawLine(carPosition, checkpointDirection, Color.GREEN);
+//            GLUtil.drawLine(carPosition, avoidanceDirection, Color.RED);
+//            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
+//            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
+//            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
+//            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
+//
+//        });
+//    }
 }

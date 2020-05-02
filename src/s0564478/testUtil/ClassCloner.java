@@ -1,4 +1,4 @@
-package s0564478;
+package s0564478.testUtil;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;

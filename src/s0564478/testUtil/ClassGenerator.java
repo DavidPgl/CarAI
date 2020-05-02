@@ -1,15 +1,16 @@
-package s0564478;
+package s0564478.testUtil;
+
+import s0564478.testUtil.ClassCloner;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.sql.Timestamp;
-import java.util.List;
 
 public class ClassGenerator {
 
-    private static final int numberOfClones = 2000;
+    private static final int numberOfClones = 3000;
 
     public static void main(String[] args) {
 

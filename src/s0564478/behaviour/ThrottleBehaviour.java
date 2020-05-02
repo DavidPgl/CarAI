@@ -4,16 +4,24 @@ import lenz.htw.ai4g.ai.Info;
 import s0564478.CarAI;
 
 public class ThrottleBehaviour {
-    private static final float goalRadius = 4f;
-    private static final float decelerateRadius = 5.8f;
-    private static final float throttleTime = 3f;
-
     private final Info info;
-    private final CarAI ai;
+    //private final CarAI ai;
+
+    private float goalRadius = 4f;
+    private float decelerateRadius = 5.8f;
+    private float throttleTime = 3f;
+
 
     public ThrottleBehaviour(Info info, CarAI ai) {
         this.info = info;
-        this.ai = ai;
+        //this.ai = ai;
+    }
+
+    public ThrottleBehaviour(Info info, float goalRadius, float decelerateRadius, float throttleTime) {
+        this.info = info;
+        this.goalRadius = goalRadius;
+        this.decelerateRadius = decelerateRadius;
+        this.throttleTime = throttleTime;
     }
 
     public float getThrottle() {
@@ -27,5 +35,17 @@ public class ThrottleBehaviour {
             return (float) (speedDiff / throttleTime);
         } else
             return info.getMaxAbsoluteAcceleration();
+    }
+
+    public float getGoalRadius() {
+        return goalRadius;
+    }
+
+    public float getDecelerateRadius() {
+        return decelerateRadius;
+    }
+
+    public float getThrottleTime() {
+        return throttleTime;
     }
 }
