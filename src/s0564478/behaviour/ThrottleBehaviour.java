@@ -4,9 +4,9 @@ import lenz.htw.ai4g.ai.Info;
 import s0564478.CarAI;
 
 public class ThrottleBehaviour {
-    private static final float goalRadius = 1.8f;
-    private static final float decelerateRadius = 15.8f;
-    private static final float throttleTime = 1.2f;
+    private static final float goalRadius = 4f;
+    private static final float decelerateRadius = 5.8f;
+    private static final float throttleTime = 3f;
 
     private final Info info;
     private final CarAI ai;

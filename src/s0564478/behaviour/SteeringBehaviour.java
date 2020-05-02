@@ -14,9 +14,9 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
 public class SteeringBehaviour {
-    private static final float goalAngle = 1.2f;
-    private static final float decelerateAngle = 47.6f;
-    private static final float steerTime = 0.3f;
+    private static final float goalAngle = 1.3f;
+    private static final float decelerateAngle = 47.1f;
+    private static final float steerTime = 0.7f;
 
     private static final double collisionAvoidanceRadius = 50.0d;
 
@@ -129,6 +129,8 @@ public class SteeringBehaviour {
         // Calculate distance to intersection
         Line line = new Line(info.getX(), info.getY(), info.getX() + polygonDirection.getX(), info.getY() + polygonDirection.getY());
         Point2D intersection = getClosestIntersection(lastObstacle.getFirst(), line);
+        if (intersection == null)
+            return null;
 
         double distance = intersection.distance(info.getX(), info.getY());
         System.out.println(distance);
