@@ -11,10 +11,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class CarAI extends AI {
     private final ThrottleBehaviour throttleBehaviour;
@@ -35,7 +33,7 @@ public class CarAI extends AI {
 
         try {
             File values = new File(System.getProperty("user.dir") + "/values.txt");
-            String carValues = String.format(getClass().getSimpleName() + ": %.2f | %.2f | %.2f | %.2f | %.2f | %.2f | %.2f\n",
+            String carValues = String.format(getClass().getSimpleName() + ": %.2f | %.2f | %.2f || %.2f | %.2f | %.2f | %.2f\n",
                     throttleBehaviour.getGoalRadius(), throttleBehaviour.getDecelerateRadius(), throttleBehaviour.getThrottleTime(),
                     steeringBehaviour.getGoalAngle(), steeringBehaviour.getDecelerateAngle(), steeringBehaviour.getSteerTime(), steeringBehaviour.getCollisionAvoidanceRadius());
 

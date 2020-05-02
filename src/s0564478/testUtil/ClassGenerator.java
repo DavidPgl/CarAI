@@ -1,7 +1,5 @@
 package s0564478.testUtil;
 
-import s0564478.testUtil.ClassCloner;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,7 +8,7 @@ import java.sql.Timestamp;
 
 public class ClassGenerator {
 
-    private static final int numberOfClones = 3000;
+    private static final int numberOfClones = 2000;
 
     public static void main(String[] args) {
 
