@@ -7,9 +7,9 @@ public class ThrottleBehaviour {
     private final Info info;
     private final CarAI ai;
 
-    private static final float goalRadius = 6.58f;
-    private static final float decelerateRadius = 14.22f;
-    private static final float throttleTime = 4.11f;
+    private static final float goalRadius = 1.2f;
+    private static final float decelerateRadius = 15.8f;
+    private static final float throttleTime = 1.2f;
 
     private static final float slowSpeedPercentage = 0.1f;
 
@@ -36,7 +36,6 @@ public class ThrottleBehaviour {
         if (driveSlower && throttle > slowSpeed)
             throttle = slowSpeed;
 
-        System.out.println(throttle);
         return throttle;
     }
 }

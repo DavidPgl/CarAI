@@ -6,6 +6,7 @@ import s0564478.CarAI;
 import s0564478.util.GLUtil;
 import s0564478.util.Line;
 import s0564478.util.Pair;
+import s0564478.util.VectorUtil;
 
 import java.awt.*;
 import java.awt.geom.Area;
@@ -18,10 +19,10 @@ public class SteeringBehaviour {
     private final CarAI ai;
 
     //Values
-    private static final float goalAngle = 0.74f;
-    private static final float decelerateAngle = 26;
-    private static final float steerTime = 0.22f;
-    private static final double collisionAvoidanceRadius = 57.41f;
+    private static final float goalAngle = 1.2f;
+    private static final float decelerateAngle = 47.6f;
+    private static final float steerTime = 0.3f;
+    private static final double collisionAvoidanceRadius = 50.12;
 
 
     private Vector2f checkpointDirection = null;
@@ -97,13 +98,14 @@ public class SteeringBehaviour {
 
         // Get obstacle in reach
         Vector2f polygonDirection = null;
-        //boolean preventBeingStuck = false;
         double squareDistance = Double.MAX_VALUE;
         for (Polygon polygon : polygons) {
             Area polygonArea = new Area(polygon);
             polygonArea.intersect(circleArea);
+
             if (polygonArea.isEmpty())
                 continue;
+
             Rectangle2D boundings = polygonArea.getBounds2D();
             Vector2f currentPolygonDirection = new Vector2f((float) boundings.getCenterX() - info.getX(), (float) boundings.getCenterY() - info.getY());
 
@@ -114,31 +116,38 @@ public class SteeringBehaviour {
             squareDistance = polygonDirection.lengthSquared();
             lastObstacle.setFirst(polygon);
         }
-
+        // No polygon in reach
         if (polygonDirection == null)
+            return null;
+
+        // Calculate distance to intersection
+        Line line = new Line(info.getX(), info.getY(), info.getX() + polygonDirection.getX(), info.getY() + polygonDirection.getY());
+        Point2D intersection = getClosestIntersection(lastObstacle.getFirst(), line);
+
+        // Prevents floating point error
+        if (intersection == null)
             return null;
 
         Vector2f orth1 = new Vector2f(-polygonDirection.getY(), polygonDirection.getX());
         Vector2f orth2 = new Vector2f(polygonDirection.getY(), -polygonDirection.getX());
         lastObstacle.setSecond(Vector2f.angle(checkpointDirection, orth1) < Vector2f.angle(checkpointDirection, orth2));
 
-        // Calculate distance to intersection
-        Line line = new Line(info.getX(), info.getY(), info.getX() + polygonDirection.getX(), info.getY() + polygonDirection.getY());
-        Point2D intersection = getClosestIntersection(lastObstacle.getFirst(), line);
-        if (intersection == null)
-            return null;
-
         double distance = intersection.distance(info.getX(), info.getY());
 
+        // If driving straight into obstacle, slow down (just a bit)
         float obstacleCarAngle = Vector2f.angle(polygonDirection, getCarDirection());
         if (Math.toDegrees(obstacleCarAngle) < 60)
             ai.driveSlowerForOneFrame();
 
-        // 90° check to use opposite vector instead of orthogonal
+        // 90° check to use opposite polygonDirection instead of orthogonal
         if (Vector2f.angle(polygonDirection, checkpointDirection) > 1.57f)
             return new Pair<>(new Vector2f(-polygonDirection.getX(), -polygonDirection.getY()), distance);
 
-        return new Pair<>(lastObstacle.getSecond() ? orth1 : orth2, distance);
+        Vector2f collisionAvoidanceDirection = lastObstacle.getSecond() ? orth1 : orth2;
+        // Instead of using the orthogonal vector, use a mixture between orth and opposite polygonDirection to keep
+        // distance to obstacle
+        collisionAvoidanceDirection = VectorUtil.add(collisionAvoidanceDirection, VectorUtil.multiply(polygonDirection, -0.1f));
+        return new Pair<>(collisionAvoidanceDirection, distance);
     }
 
     private Point2D.Double getClosestIntersection(Polygon polygon, Line line) {
@@ -195,11 +204,6 @@ public class SteeringBehaviour {
             Vector2f carPosition = new Vector2f(info.getX(), info.getY());
             GLUtil.drawLine(carPosition, checkpointDirection, Color.GREEN);
             GLUtil.drawLine(carPosition, avoidanceDirection, Color.RED);
-            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
-            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
-            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
-            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
-
         });
     }
 }
