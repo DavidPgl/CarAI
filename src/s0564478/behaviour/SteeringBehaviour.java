@@ -3,7 +3,6 @@ package s0564478.behaviour;
 import lenz.htw.ai4g.ai.Info;
 import org.lwjgl.util.vector.Vector2f;
 import s0564478.CarAI;
-import s0564478.util.GLUtil;
 import s0564478.util.Line;
 import s0564478.util.Pair;
 
@@ -121,7 +120,6 @@ public class SteeringBehaviour {
 
         // Get obstacle in reach
         Vector2f polygonDirection = null;
-        boolean preventBeingStuck = false;
         double squareDistance = Double.MAX_VALUE;
         for (Polygon polygon : polygons) {
             Area polygonArea = new Area(polygon);
@@ -137,9 +135,6 @@ public class SteeringBehaviour {
 
             polygonDirection = currentPolygonDirection;
             squareDistance = polygonDirection.lengthSquared();
-            // Prevent switching directions while in front of same polygon
-            if (lastObstacle.getFirst() == polygon)
-                preventBeingStuck = true;
             lastObstacle.setFirst(polygon);
         }
 
@@ -149,8 +144,7 @@ public class SteeringBehaviour {
 
         Vector2f orth1 = new Vector2f(-polygonDirection.getY(), polygonDirection.getX());
         Vector2f orth2 = new Vector2f(polygonDirection.getY(), -polygonDirection.getX());
-        if (!preventBeingStuck)
-            lastObstacle.setSecond(Vector2f.angle(checkpointDirection, orth1) < Vector2f.angle(checkpointDirection, orth2));
+        lastObstacle.setSecond(Vector2f.angle(checkpointDirection, orth1) < Vector2f.angle(checkpointDirection, orth2));
 
         // Calculate distance to intersection
         Line line = new Line(info.getX(), info.getY(), info.getX() + polygonDirection.getX(), info.getY() + polygonDirection.getY());
@@ -159,7 +153,10 @@ public class SteeringBehaviour {
             return null;
 
         double distance = intersection.distance(info.getX(), info.getY());
-        System.out.println(distance);
+
+        // If the polygon is in the opposite direction (more than 90°) than we don't need the orth to avoid it
+        if (Vector2f.angle(polygonDirection, checkpointDirection) > 1.57f)
+            return new Pair<>(new Vector2f(-polygonDirection.getX(), -polygonDirection.getY()), distance);
 
         return new Pair<>(lastObstacle.getSecond() ? orth1 : orth2, distance);
     }
