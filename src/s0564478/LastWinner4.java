@@ -9,17 +9,17 @@ import s0564478.behaviour.ThrottleBehaviour;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LastWinner1 extends AI {
+public class LastWinner4 extends AI {
     private final ThrottleBehaviour throttleBehaviour;
     private final SteeringBehaviour steeringBehaviour;
 
     private final List<Runnable> debugActions = new ArrayList<>();
 
-    public LastWinner1(Info info) {
+    public LastWinner4(Info info) {
         super(info);
 
-        throttleBehaviour = new ThrottleBehaviour(info, 6.26f, 13.24f, 2.59f);
-        steeringBehaviour = new SteeringBehaviour(info, 0.68f, 47.73f, 0.37f, 49.3f);
+        throttleBehaviour = new ThrottleBehaviour(info, 3.78f, 10.84f, 1.32f);
+        steeringBehaviour = new SteeringBehaviour(info, 0.65f, 28.17f, 0.16f, 39.14f);
 
         enlistForTournament(564478, 562886);
     }
