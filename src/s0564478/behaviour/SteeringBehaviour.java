@@ -15,18 +15,17 @@ import java.awt.geom.Rectangle2D;
 
 public class SteeringBehaviour {
     private final Info info;
-    //private final CarAI ai;
+    private final CarAI ai;
 
     //Values
-    private float goalAngle = 1.3f;
-    private float decelerateAngle = 47.1f;
-    private float steerTime = 0.7f;
-    private double collisionAvoidanceRadius = 50.0d;
+    private static final float goalAngle = 0.73f;
+    private static final float decelerateAngle = 28.5f;
+    private static final float steerTime = 0.24f;
+    private static final double collisionAvoidanceRadius = 44.95f;
 
     private Vector2f checkpointDirection = null;
     // Left: false | Right: true
     private final Pair<Polygon, Boolean> lastObstacle = new Pair<>(null, false);
-
 
 
     // Debug stuff
@@ -34,31 +33,7 @@ public class SteeringBehaviour {
 
     public SteeringBehaviour(Info info, CarAI ai) {
         this.info = info;
-        //this.ai = ai;
-    }
-
-    public SteeringBehaviour(Info info, float goalAngle, float decelerateAngle, float steerTime, double collisionAvoidanceRadius) {
-        this.info = info;
-        this.goalAngle = goalAngle;
-        this.decelerateAngle = decelerateAngle;
-        this.steerTime = steerTime;
-        this.collisionAvoidanceRadius = collisionAvoidanceRadius;
-    }
-
-    public float getGoalAngle() {
-        return goalAngle;
-    }
-
-    public float getDecelerateAngle() {
-        return decelerateAngle;
-    }
-
-    public float getSteerTime() {
-        return steerTime;
-    }
-
-    public double getCollisionAvoidanceRadius() {
-        return collisionAvoidanceRadius;
+        this.ai = ai;
     }
 
     public float getSteering() {
@@ -69,7 +44,7 @@ public class SteeringBehaviour {
         Pair<Vector2f, Double> collisionAvoidance = getCollisionAvoidance();
 
         avoidanceDirection = collisionAvoidance == null ? new Vector2f(0, 0) : collisionAvoidance.getFirst();
-        //doDebugStuff();
+        doDebugStuff();
 
         if (collisionAvoidance != null) {
             float avoidanceSteering = getSteeringTo(collisionAvoidance.getFirst());
@@ -121,7 +96,7 @@ public class SteeringBehaviour {
 
         // Get obstacle in reach
         Vector2f polygonDirection = null;
-        boolean preventBeingStuck = false;
+        //boolean preventBeingStuck = false;
         double squareDistance = Double.MAX_VALUE;
         for (Polygon polygon : polygons) {
             Area polygonArea = new Area(polygon);
@@ -129,7 +104,6 @@ public class SteeringBehaviour {
             if (polygonArea.isEmpty())
                 continue;
             Rectangle2D boundings = polygonArea.getBounds2D();
-            //ai.addDebugAction(() -> GLUtil.drawLine(info.getX(), info.getY(), boundings.getCenterX(), boundings.getCenterY(), Color.WHITE));
             Vector2f currentPolygonDirection = new Vector2f((float) boundings.getCenterX() - info.getX(), (float) boundings.getCenterY() - info.getY());
 
             if (currentPolygonDirection.lengthSquared() > squareDistance)
@@ -138,19 +112,18 @@ public class SteeringBehaviour {
             polygonDirection = currentPolygonDirection;
             squareDistance = polygonDirection.lengthSquared();
             // Prevent switching directions while in front of same polygon
-            if (lastObstacle.getFirst() == polygon)
-                preventBeingStuck = true;
+//            if (lastObstacle.getFirst() == polygon)
+//                preventBeingStuck = true;
             lastObstacle.setFirst(polygon);
         }
 
         if (polygonDirection == null)
             return null;
 
-
         Vector2f orth1 = new Vector2f(-polygonDirection.getY(), polygonDirection.getX());
         Vector2f orth2 = new Vector2f(polygonDirection.getY(), -polygonDirection.getX());
-        if (!preventBeingStuck)
-            lastObstacle.setSecond(Vector2f.angle(checkpointDirection, orth1) < Vector2f.angle(checkpointDirection, orth2));
+//        if (!preventBeingStuck)
+        lastObstacle.setSecond(Vector2f.angle(checkpointDirection, orth1) < Vector2f.angle(checkpointDirection, orth2));
 
         // Calculate distance to intersection
         Line line = new Line(info.getX(), info.getY(), info.getX() + polygonDirection.getX(), info.getY() + polygonDirection.getY());
@@ -159,7 +132,9 @@ public class SteeringBehaviour {
             return null;
 
         double distance = intersection.distance(info.getX(), info.getY());
-        System.out.println(distance);
+
+        if (Vector2f.angle(polygonDirection, checkpointDirection) > 1.57f)
+            return new Pair<>(new Vector2f(-polygonDirection.getX(), -polygonDirection.getY()), distance);
 
         return new Pair<>(lastObstacle.getSecond() ? orth1 : orth2, distance);
     }
@@ -213,16 +188,16 @@ public class SteeringBehaviour {
         return (value >= a && value <= b) || (value <= a && value >= b);
     }
 
-//    private void doDebugStuff() {
-//        ai.addDebugAction(() -> {
-//            Vector2f carPosition = new Vector2f(info.getX(), info.getY());
-//            GLUtil.drawLine(carPosition, checkpointDirection, Color.GREEN);
-//            GLUtil.drawLine(carPosition, avoidanceDirection, Color.RED);
-//            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
-//            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
-//            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
-//            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
-//
-//        });
-//    }
+    private void doDebugStuff() {
+        ai.addDebugAction(() -> {
+            Vector2f carPosition = new Vector2f(info.getX(), info.getY());
+            GLUtil.drawLine(carPosition, checkpointDirection, Color.GREEN);
+            GLUtil.drawLine(carPosition, avoidanceDirection, Color.RED);
+            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
+            //GLUtil.drawLine(carPosition, new Vector2f((float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
+            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, (float) collisionAvoidanceRadius), Color.BLACK, false);
+            //GLUtil.drawLine(carPosition, new Vector2f(-(float) collisionAvoidanceRadius, -(float) collisionAvoidanceRadius), Color.BLACK, false);
+
+        });
+    }
 }

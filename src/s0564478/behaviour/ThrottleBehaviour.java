@@ -5,23 +5,16 @@ import s0564478.CarAI;
 
 public class ThrottleBehaviour {
     private final Info info;
-    //private final CarAI ai;
+    private final CarAI ai;
 
-    private float goalRadius = 4f;
-    private float decelerateRadius = 5.8f;
-    private float throttleTime = 3f;
+    private static final float goalRadius = 5.38f;
+    private static final float decelerateRadius = 9.88f;
+    private static final float throttleTime = 1.08f;
 
 
     public ThrottleBehaviour(Info info, CarAI ai) {
         this.info = info;
-        //this.ai = ai;
-    }
-
-    public ThrottleBehaviour(Info info, float goalRadius, float decelerateRadius, float throttleTime) {
-        this.info = info;
-        this.goalRadius = goalRadius;
-        this.decelerateRadius = decelerateRadius;
-        this.throttleTime = throttleTime;
+        this.ai = ai;
     }
 
     public float getThrottle() {
@@ -35,17 +28,5 @@ public class ThrottleBehaviour {
             return (float) (speedDiff / throttleTime);
         } else
             return info.getMaxAbsoluteAcceleration();
-    }
-
-    public float getGoalRadius() {
-        return goalRadius;
-    }
-
-    public float getDecelerateRadius() {
-        return decelerateRadius;
-    }
-
-    public float getThrottleTime() {
-        return throttleTime;
     }
 }
