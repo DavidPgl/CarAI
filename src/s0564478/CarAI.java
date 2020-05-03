@@ -13,6 +13,8 @@ public class CarAI extends AI {
     private final ThrottleBehaviour throttleBehaviour;
     private final SteeringBehaviour steeringBehaviour;
 
+    private boolean driveSlowerForOneFrame;
+
     private final List<Runnable> debugActions = new ArrayList<>();
 
     public CarAI(Info info) {
@@ -31,7 +33,9 @@ public class CarAI extends AI {
 
     @Override
     public DriverAction update(boolean wasResetAfterCollision) {
-        return new DriverAction(throttleBehaviour.getThrottle(), steeringBehaviour.getSteering());
+        float throttle = throttleBehaviour.getThrottle(driveSlowerForOneFrame);
+        driveSlowerForOneFrame = false;
+        return new DriverAction(throttle, steeringBehaviour.getSteering());
     }
 
     @Override
@@ -46,5 +50,9 @@ public class CarAI extends AI {
 
     public void addDebugAction(Runnable action) {
         debugActions.add(action);
+    }
+
+    public void driveSlowerForOneFrame() {
+        driveSlowerForOneFrame = true;
     }
 }

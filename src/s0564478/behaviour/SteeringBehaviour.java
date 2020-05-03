@@ -18,10 +18,11 @@ public class SteeringBehaviour {
     private final CarAI ai;
 
     //Values
-    private static final float goalAngle = 0.73f;
-    private static final float decelerateAngle = 28.5f;
-    private static final float steerTime = 0.24f;
-    private static final double collisionAvoidanceRadius = 44.95f;
+    private static final float goalAngle = 0.74f;
+    private static final float decelerateAngle = 26;
+    private static final float steerTime = 0.22f;
+    private static final double collisionAvoidanceRadius = 57.41f;
+
 
     private Vector2f checkpointDirection = null;
     // Left: false | Right: true
@@ -111,9 +112,6 @@ public class SteeringBehaviour {
 
             polygonDirection = currentPolygonDirection;
             squareDistance = polygonDirection.lengthSquared();
-            // Prevent switching directions while in front of same polygon
-//            if (lastObstacle.getFirst() == polygon)
-//                preventBeingStuck = true;
             lastObstacle.setFirst(polygon);
         }
 
@@ -122,7 +120,6 @@ public class SteeringBehaviour {
 
         Vector2f orth1 = new Vector2f(-polygonDirection.getY(), polygonDirection.getX());
         Vector2f orth2 = new Vector2f(polygonDirection.getY(), -polygonDirection.getX());
-//        if (!preventBeingStuck)
         lastObstacle.setSecond(Vector2f.angle(checkpointDirection, orth1) < Vector2f.angle(checkpointDirection, orth2));
 
         // Calculate distance to intersection
@@ -133,6 +130,11 @@ public class SteeringBehaviour {
 
         double distance = intersection.distance(info.getX(), info.getY());
 
+        float obstacleCarAngle = Vector2f.angle(polygonDirection, getCarDirection());
+        if (Math.toDegrees(obstacleCarAngle) < 60)
+            ai.driveSlowerForOneFrame();
+
+        // 90° check to use opposite vector instead of orthogonal
         if (Vector2f.angle(polygonDirection, checkpointDirection) > 1.57f)
             return new Pair<>(new Vector2f(-polygonDirection.getX(), -polygonDirection.getY()), distance);
 
