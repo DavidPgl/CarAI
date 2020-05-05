@@ -1,4 +1,4 @@
-package s0564478;
+package s0564478.testing;
 
 import java.io.File;
 import java.io.IOException;

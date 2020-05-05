@@ -1,11 +1,10 @@
-package s0564478;
+package s0564478.testing;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.sql.Timestamp;
-import java.util.List;
 
 public class ClassGenerator {
 

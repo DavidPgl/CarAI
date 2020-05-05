@@ -5,7 +5,9 @@ import lenz.htw.ai4g.ai.DriverAction;
 import lenz.htw.ai4g.ai.Info;
 import s0564478.behaviour.SteeringBehaviour;
 import s0564478.behaviour.ThrottleBehaviour;
+import s0564478.util.GLUtil;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +23,16 @@ public class CarAI extends AI {
         throttleBehaviour = new ThrottleBehaviour(info, this);
         steeringBehaviour = new SteeringBehaviour(info, this);
 
+        LevelGraph levelGraph = new LevelGraph(info.getTrack().getObstacles());
+
+        addDebugAction(() -> {
+            levelGraph.getConvexPoints().forEach(point -> GLUtil.drawLine(point.getX() - 5, point.getY() - 5, point.getX() + 5, point.getY() + 5, Color.BLACK));
+            levelGraph.getConvexPoints().forEach(point -> GLUtil.drawLine(point.getX() + 5, point.getY() - 5, point.getX() - 5, point.getY() + 5, Color.BLACK));
+        });
+        System.out.println(levelGraph.getConvexPoints());
+
         enlistForTournament(564478, 562886);
+
     }
 
     @Override
