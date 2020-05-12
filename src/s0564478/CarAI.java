@@ -16,6 +16,8 @@ public class CarAI extends AI {
     private final SteeringBehaviour steeringBehaviour;
 
     private final List<Runnable> debugActions = new ArrayList<>();
+    private final LevelGraph levelGraph;
+    private Point currentCheckpoint = null;
 
     public CarAI(Info info) {
         super(info);
@@ -23,16 +25,16 @@ public class CarAI extends AI {
         throttleBehaviour = new ThrottleBehaviour(info, this);
         steeringBehaviour = new SteeringBehaviour(info, this);
 
-        LevelGraph levelGraph = new LevelGraph(info.getTrack().getObstacles());
+        levelGraph = new LevelGraph(info.getTrack().getObstacles());
 
         addDebugAction(() -> {
-            levelGraph.getConvexPoints().forEach(point -> GLUtil.drawLine(point.getX() - 5, point.getY() - 5, point.getX() + 5, point.getY() + 5, Color.BLACK));
-            levelGraph.getConvexPoints().forEach(point -> GLUtil.drawLine(point.getX() + 5, point.getY() - 5, point.getX() - 5, point.getY() + 5, Color.BLACK));
+            levelGraph.getVerticesPoints().forEach(point -> GLUtil.drawLine(point.getX() - 5, point.getY() - 5, point.getX() + 5, point.getY() + 5, Color.RED));
+            levelGraph.getVerticesPoints().forEach(point -> GLUtil.drawLine(point.getX() + 5, point.getY() - 5, point.getX() - 5, point.getY() + 5, Color.RED));
+            levelGraph.getVertices().forEach(vertex -> vertex.getEdges().forEach(edge ->
+                    GLUtil.drawLine(vertex.getData(), edge.getTo().getData(), Color.BLACK)));
         });
-        System.out.println(levelGraph.getConvexPoints());
-
+        System.out.println(levelGraph.getVertices().stream().map(v -> v.getEdges().size()).reduce(0, Integer::sum));
         enlistForTournament(564478, 562886);
-
     }
 
     @Override
@@ -42,6 +44,11 @@ public class CarAI extends AI {
 
     @Override
     public DriverAction update(boolean wasResetAfterCollision) {
+        if (!info.getCurrentCheckpoint().equals(currentCheckpoint)) {
+            currentCheckpoint = new Point(info.getCurrentCheckpoint());
+            levelGraph.updateCarAndCP(new Point((int) info.getX(), (int) info.getY()), currentCheckpoint);
+        }
+
         return new DriverAction(throttleBehaviour.getThrottle(), steeringBehaviour.getSteering());
     }
 

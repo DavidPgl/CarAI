@@ -9,7 +9,7 @@ public class VectorUtil {
         return new Vector2f(first.x + second.x, first.y + second.y);
     }
 
-    public static Vector2f multiply(Vector2f vector, float factor) {
+    public static Vector2f scale(Vector2f vector, float factor) {
         return new Vector2f(vector.x * factor, vector.y * factor);
     }
 
@@ -26,5 +26,9 @@ public class VectorUtil {
 
     public static Vector2f vectorFromPoints(Point from, Point to) {
         return new Vector2f((float) (to.getX() - from.getX()), (float) (to.getY() - from.getY()));
+    }
+
+    public static Point translatePoint(Point a, Vector2f translation) {
+        return new Point((int) (a.getX() + translation.getX()), (int) (a.getY() + translation.getY()));
     }
 }

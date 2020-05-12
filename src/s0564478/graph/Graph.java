@@ -6,12 +6,14 @@ public class Graph<T> {
 
     private final List<Vertex<T>> vertices = new ArrayList<>();
 
-    public boolean add(T vertexData) {
+    @SuppressWarnings("UnusedReturnValue")
+    public Vertex<T> add(T vertexData) {
         if (this.contains(vertexData))
-            return false;
+            return null;
 
-        vertices.add(new Vertex<>(vertexData));
-        return true;
+        Vertex<T> newVertex = new Vertex<>(vertexData);
+        vertices.add(newVertex);
+        return newVertex;
     }
 
     public boolean addEdge(T from, T to, int weight) {

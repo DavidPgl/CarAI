@@ -18,4 +18,8 @@ public class GLUtil {
         GL11.glVertex2d(x2, y2);
         GL11.glEnd();
     }
+
+    public static void drawLine(Point a, Point b, Color color) {
+        drawLine(a.getX(), a.getY(), b.getX(), b.getY(), color);
+    }
 }
