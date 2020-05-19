@@ -20,11 +20,17 @@ public class Graph<T> {
         Vertex<T> vertexFrom = getVertexFromData(from);
         Vertex<T> vertexTo = getVertexFromData(to);
 
-        if (vertexFrom != null && vertexTo != null) {
-            vertexFrom.getEdges().add(new Edge<>(vertexTo, weight));
-            return true;
+        if (vertexFrom == null || vertexTo == null)
+            return false;
+
+        // Already has edge to vertex
+        for (Edge<T> edge : vertexFrom.getEdges()) {
+            if (edge.getTo().equals(vertexTo))
+                return false;
         }
-        return false;
+
+        vertexFrom.getEdges().add(new Edge<>(vertexTo, weight));
+        return true;
     }
 
     public List<Vertex<T>> getVertices() {

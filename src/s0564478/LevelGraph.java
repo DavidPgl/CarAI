@@ -40,6 +40,12 @@ public class LevelGraph {
         return graph.getVertices().stream().map(Vertex::getData).collect(Collectors.toList());
     }
 
+    public List<Point> getPath(Point start, Point goal) {
+        return graph.getCheapestPath(start, goal).stream()
+                .map(Vertex::getData)
+                .collect(Collectors.toList());
+    }
+
     /**
      * Goes through the polygon list and applies an offset ({@link #POINT_OFFSET}) to it
      *
@@ -116,6 +122,7 @@ public class LevelGraph {
                 continue;
             int weight = (int) currentVertex.getData().distance(nextVertex.getData());
             graph.addEdge(currentVertex.getData(), nextVertex.getData(), weight);
+            graph.addEdge(nextVertex.getData(), currentVertex.getData(), weight);
         }
     }
 
