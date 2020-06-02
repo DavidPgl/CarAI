@@ -1,6 +1,7 @@
-package s0564478;
+package s0564478.navigation;
 
 import org.lwjgl.util.vector.Vector2f;
+import s0564478.CarAI;
 import s0564478.graph.Graph;
 import s0564478.graph.OffsetPolygon;
 import s0564478.graph.Vertex;
@@ -8,6 +9,7 @@ import s0564478.util.VectorUtil;
 
 import java.awt.*;
 import java.awt.geom.Line2D;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,7 +22,10 @@ public class LevelGraph {
     private final Graph<Point> graph = new Graph<>();
     private final OffsetPolygon[] offsetObstacles;
 
-    public LevelGraph(Polygon[] obstacles) {
+    private final CarAI ai;
+
+    public LevelGraph(Polygon[] obstacles, CarAI ai) {
+        this.ai = ai;
         this.offsetObstacles = generateOffsetPolygons(obstacles);
 
         addObstacleVerticesToGraph(offsetObstacles);
@@ -40,10 +45,37 @@ public class LevelGraph {
         return graph.getVertices().stream().map(Vertex::getData).collect(Collectors.toList());
     }
 
-    public List<Point> getPath(Point start, Point goal) {
-        return graph.getCheapestPath(start, goal).stream()
+    /**
+     * Gets the cheapest path and initializes {@link LevelPoint}s for each point in the path.
+     *
+     * @param start Start point of path.
+     * @param goal  End point of path.
+     * @return List of {@link LevelPoint}s representing the path.
+     */
+    public List<LevelPoint> getPath(Point start, Point goal) {
+        List<Point> tempPath = graph.getCheapestPath(start, goal).stream()
                 .map(Vertex::getData)
                 .collect(Collectors.toList());
+
+        List<LevelPoint> path = new ArrayList<>();
+        // Add start point
+        path.add(new LevelPoint(tempPath.get(0), LevelPoint.Type.CHECKPOINT));
+        for (int i = 1; i < tempPath.size() - 1; i++) {
+            Point previousPoint = tempPath.get(i - 1);
+            LevelPoint currentPoint = new LevelPoint(tempPath.get(i), LevelPoint.Type.ROUTE_POINT);
+            Point nextPoint = tempPath.get(i + 1);
+
+            // Calculate angle to next point
+            Vector2f a = VectorUtil.vectorFromPoints(currentPoint, previousPoint).normalise(null);
+            Vector2f b = VectorUtil.vectorFromPoints(currentPoint, nextPoint).normalise(null);
+            currentPoint.setAngleToNextPoint(Vector2f.angle(a, b));
+
+            // Add to new list
+            path.add(currentPoint);
+        }
+        // Add checkpoint/goal
+        path.add(new LevelPoint(tempPath.get(tempPath.size() - 1), LevelPoint.Type.CHECKPOINT));
+        return path;
     }
 
     /**
@@ -63,8 +95,8 @@ public class LevelGraph {
                 Point current = new Point(polygon.xpoints[(i + 1) % polygon.npoints], polygon.ypoints[(i + 1) % polygon.npoints]);
                 Point next = new Point(polygon.xpoints[(i + 2) % polygon.npoints], polygon.ypoints[(i + 2) % polygon.npoints]);
 
-                Vector2f a = VectorUtil.vectorFromPoints(current, previous);
-                Vector2f b = VectorUtil.vectorFromPoints(current, next);
+                Vector2f a = VectorUtil.vectorFromPoints(current, previous).normalise(null);
+                Vector2f b = VectorUtil.vectorFromPoints(current, next).normalise(null);
 
 
                 // Move current outwards using both orth-vectors
@@ -72,6 +104,11 @@ public class LevelGraph {
                 Vector2f orthB = new Vector2f(b.getY(), -b.getX());
                 Vector2f normalVector = VectorUtil.add(orthA, orthB).normalise(null);
                 Vector2f translateVector = VectorUtil.scale(normalVector, POINT_OFFSET);
+
+//                ai.addDebugAction(() -> {
+//                    GLUtil.drawLine(current, new Point(current.x + (int)translateVector.x, current.y + (int)translateVector.y), Color.BLACK);
+//                });
+
                 current.translate((int) translateVector.getX(), (int) translateVector.getY());
                 // Save values
                 xPoints[i] = (int) current.getX();

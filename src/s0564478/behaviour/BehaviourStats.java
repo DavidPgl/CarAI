@@ -1,16 +1,26 @@
 package s0564478.behaviour;
 
 public final class BehaviourStats {
-    public static final float GOAL_ANGLE = 1f;
-    public static final float DECELERATE_ANGLE = 25f;
-    public static final float STEERING_TIME = 0.5f;
 
-    public static final float GOAL_DISTANCE = 0.5f;
-    public static final float DECELERATE_DISTANCE = 35f;
-    public static final float THROTTLE_TIME = 2f;
+    // GLOBAL
+    public static final float GOAL_ANGLE = 0.5f;
+    public static final float DECELERATE_ANGLE = 50f;
+    public static final float STEERING_TIME = 1f;
 
-    public static final float ACCELERATE_DISTANCE = 30f;
-    public static final float MIN_ACCELERATION_FACTOR = 0.1f;
+    public static final class Checkpoint {
 
-    public static final float ROUTE_POINT_GOAL_DISTANCE = 35f;
+        public static final float GOAL_DISTANCE = 1f;
+        public static final float DECELERATE_DISTANCE = 30f;
+        public static final float THROTTLE_TIME = 1f;
+    }
+
+    public static final class RoutePoint {
+        public static final float GOAL_DISTANCE = 15f;
+        public static final float DECELERATE_DISTANCE = 30f;
+        public static final float THROTTLE_TIME = 1f;
+    }
+
+    public static final class StepPoint {
+        public static final float GOAL_DISTANCE = 25f;
+    }
 }

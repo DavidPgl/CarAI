@@ -1,56 +1,94 @@
 package s0564478.behaviour;
 
 import lenz.htw.ai4g.ai.Info;
+import org.lwjgl.util.vector.Vector2f;
 import s0564478.CarAI;
+import s0564478.navigation.LevelPoint;
 
 import java.awt.*;
-import java.util.Optional;
 
 public class ThrottleBehaviour {
 
     private final Info info;
     private final CarAI ai;
-    private Point previousRoutePoint;
+    private LevelPoint previousRoutePoint;
+    private LevelPoint currentRoutePoint;
 
     public ThrottleBehaviour(Info info, CarAI ai) {
         this.info = info;
         this.ai = ai;
-        this.previousRoutePoint = new Point((int) info.getX(), (int) info.getY());
+        this.previousRoutePoint = new LevelPoint((int) info.getX(), (int) info.getY(), LevelPoint.Type.CHECKPOINT);
+        this.currentRoutePoint = previousRoutePoint;
     }
 
-    public float getThrottle(Point nextRoutePoint) {
-        Optional<Float> startAcceleration = getStartAcceleration(nextRoutePoint);
-        if (startAcceleration.isPresent()) {
-            System.out.println("AHHHHH");
-            return startAcceleration.get();
+    public float getThrottle(LevelPoint nextRoutePoint) {
+        // Update points
+        if (!nextRoutePoint.equals(currentRoutePoint)) {
+            previousRoutePoint = currentRoutePoint;
+            currentRoutePoint = nextRoutePoint;
         }
 
-        double distance = nextRoutePoint.distance(info.getX(), info.getY());
-        if (distance < BehaviourStats.GOAL_DISTANCE)
+        if (!isPreviousPointOutOfRange())
+            return getAngularThrottle(currentRoutePoint);
+
+        double distance = currentRoutePoint.distance(info.getX(), info.getY());
+
+        switch (currentRoutePoint.type) {
+            case ROUTE_POINT:
+                return getRoutePointThrottle(distance);
+            case CHECKPOINT:
+                return getCheckPointThrottle(distance, currentRoutePoint);
+            default:
+                return getAngularThrottle(currentRoutePoint);
+        }
+    }
+
+    private float getAngularThrottle(LevelPoint nextRoutePoint) {
+        Point carPosition = ai.getCarPosition();
+        Vector2f vectorToPoint = new Vector2f(nextRoutePoint.x - carPosition.x, nextRoutePoint.y - carPosition.y);
+        float angle = Vector2f.angle(ai.getCarDirection(), vectorToPoint);
+        double factor = Math.pow((Math.PI - angle) / Math.PI, 10);
+        double newSpeed = factor * info.getMaxVelocity();
+        double speedDiff = newSpeed - ai.getSignedVelocity();
+        speedDiff = Math.max(speedDiff, 0.0001d);
+        return (float) (speedDiff / BehaviourStats.RoutePoint.THROTTLE_TIME);
+    }
+
+    private float getCheckPointThrottle(double distance, LevelPoint nextRoutePoint) {
+        if (distance < BehaviourStats.Checkpoint.GOAL_DISTANCE)
             return 0;
-        else if (distance < BehaviourStats.DECELERATE_DISTANCE) {
-            double newSpeed = (distance / BehaviourStats.DECELERATE_DISTANCE) * info.getMaxVelocity();
-            double speedDiff = newSpeed - info.getVelocity().length();
-            return (float) (speedDiff / BehaviourStats.THROTTLE_TIME);
-        } else
+
+        if (distance > BehaviourStats.Checkpoint.DECELERATE_DISTANCE)
             return info.getMaxAbsoluteAcceleration();
+
+        Point carPosition = ai.getCarPosition();
+        Vector2f vectorToPoint = new Vector2f(nextRoutePoint.x - carPosition.x, nextRoutePoint.y - carPosition.y);
+        float angle = Vector2f.angle(ai.getCarDirection(), vectorToPoint);
+
+        // Calculate interpolation for slowing down
+        double factor = Math.pow((distance / BehaviourStats.Checkpoint.DECELERATE_DISTANCE + (Math.PI - angle) / Math.PI) / 2f, 3);
+        double newSpeed = factor * info.getMaxVelocity();
+        double speedDiff = newSpeed - info.getVelocity().length();
+        return (float) (speedDiff / BehaviourStats.Checkpoint.THROTTLE_TIME);
     }
 
-    /**
-     * Checks if the car is still close to the last route point, if so, reduces the speed.
-     */
-    private Optional<Float> getStartAcceleration(Point nextRoutePoint) {
-        // Reached last point? Move
-        if (!nextRoutePoint.equals(previousRoutePoint)) {
-            double distance = previousRoutePoint.distance(info.getX(), info.getY());
-            // Still close to previous point
-            if (distance > BehaviourStats.ACCELERATE_DISTANCE)
-                previousRoutePoint = nextRoutePoint;
-            else {
-                double factor = distance / BehaviourStats.ACCELERATE_DISTANCE;
-                return Optional.of((float) Math.max(BehaviourStats.MIN_ACCELERATION_FACTOR, factor) * 2);
-            }
-        }
-        return Optional.empty();
+    private float getRoutePointThrottle(double distance) {
+        if (distance > BehaviourStats.RoutePoint.DECELERATE_DISTANCE)
+            return info.getMaxAbsoluteAcceleration();
+
+        double factor = Math.pow(((currentRoutePoint.getAngleToNextPoint() / Math.PI) + (distance / BehaviourStats.RoutePoint.DECELERATE_DISTANCE)) / 2f, 3);
+        double newSpeed = Math.min(factor, 1) * info.getMaxVelocity();
+        double speedDiff = newSpeed - info.getVelocity().length();
+        return (float) (speedDiff / BehaviourStats.RoutePoint.THROTTLE_TIME);
+    }
+
+    private boolean isPreviousPointOutOfRange() {
+        if (previousRoutePoint.type == LevelPoint.Type.STEP_POINT)
+            return true;
+        Point carPosition = new Point((int) info.getX(), (int) info.getY());
+        double distance = previousRoutePoint.distance(carPosition);
+
+        return (previousRoutePoint.type == LevelPoint.Type.CHECKPOINT && distance > BehaviourStats.Checkpoint.DECELERATE_DISTANCE) ||
+                (previousRoutePoint.type == LevelPoint.Type.ROUTE_POINT && distance > BehaviourStats.RoutePoint.DECELERATE_DISTANCE);
     }
 }

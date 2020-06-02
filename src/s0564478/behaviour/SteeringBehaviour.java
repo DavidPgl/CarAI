@@ -25,7 +25,7 @@ public class SteeringBehaviour {
     }
 
     private float getSteeringTo(Vector2f destinationDirection) {
-        Vector2f carDirection = getCarDirection();
+        Vector2f carDirection = ai.getCarDirection();
         // Get angle between current and destination direction
         double diffAngle = Vector2f.angle(carDirection, destinationDirection);
         diffAngle = Math.toDegrees(diffAngle);
@@ -40,11 +40,6 @@ public class SteeringBehaviour {
             return Math.max(Math.min(newAcceleration, info.getMaxAbsoluteAngularAcceleration()), -info.getMaxAbsoluteAngularAcceleration());
         } else
             return info.getMaxAbsoluteAngularAcceleration() * (angleIsNegative ? -1 : 1);
-    }
-
-    private Vector2f getCarDirection() {
-        float orientation = info.getOrientation();
-        return new Vector2f((float) Math.cos(orientation), (float) Math.sin(orientation));
     }
 
     private void doDebugStuff() {

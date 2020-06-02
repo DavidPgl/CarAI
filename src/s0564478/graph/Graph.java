@@ -2,14 +2,14 @@ package s0564478.graph;
 
 import java.util.*;
 
-public class Graph<T> {
+public final class Graph<T> {
 
-    private final List<Vertex<T>> vertices = new ArrayList<>();
+    private List<Vertex<T>> vertices = new ArrayList<>();
 
-    @SuppressWarnings("UnusedReturnValue")
+
     public Vertex<T> add(T vertexData) {
         if (this.contains(vertexData))
-            return null;
+            return getVertexFromData(vertexData);
 
         Vertex<T> newVertex = new Vertex<>(vertexData);
         vertices.add(newVertex);
