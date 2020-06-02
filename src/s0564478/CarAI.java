@@ -45,7 +45,7 @@ public class CarAI extends AI {
 
     @Override
     public String getName() {
-        return this.getClass().getSimpleName();
+        return "DriftKing";
     }
 
     @Override
