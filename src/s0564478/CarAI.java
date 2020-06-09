@@ -31,13 +31,13 @@ public class CarAI extends AI {
         throttleBehaviour = new ThrottleBehaviour(info, this);
         steeringBehaviour = new SteeringBehaviour(info, this);
 
-        levelGraph = new LevelGraph(info.getTrack().getObstacles(), this);
+        levelGraph = new LevelGraph(info.getTrack(), this);
 
         addDebugAction(() -> {
             levelGraph.getVerticesPoints().forEach(point -> GLUtil.drawLine(point.getX() - 5, point.getY() - 5, point.getX() + 5, point.getY() + 5, Color.RED));
             levelGraph.getVerticesPoints().forEach(point -> GLUtil.drawLine(point.getX() + 5, point.getY() - 5, point.getX() - 5, point.getY() + 5, Color.RED));
             //levelGraph.getVertices().forEach(vertex -> vertex.getEdges().forEach(edge ->
-            //       GLUtil.drawLine(vertex.getData(), edge.getTo().getData(), Color.BLACK)));
+            //     GLUtil.drawLine(vertex.getData(), edge.getTo().getData(), Color.BLACK)));
         });
         System.out.println(levelGraph.getVertices().stream().map(v -> v.getEdges().size()).reduce(0, Integer::sum));
         enlistForTournament(564478, 562886);
@@ -71,8 +71,8 @@ public class CarAI extends AI {
         return new DriverAction(throttle, steeringBehaviour.getSteering(currentRoutePoint));
     }
 
-    public Point getCarPosition() {
-        return new Point((int) info.getX(), (int) info.getY());
+    public LevelPoint getCarPosition() {
+        return new LevelPoint((int) info.getX(), (int) info.getY(), LevelPoint.Type.CHECKPOINT);
     }
 
     public Vector2f getCarDirection() {

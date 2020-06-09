@@ -4,7 +4,7 @@ import java.awt.*;
 
 public class LevelPoint extends Point {
     public final Type type;
-
+    public final LevelZone levelZone;
 
     /**
      * Angle between 0 and pi (radians)
@@ -12,13 +12,17 @@ public class LevelPoint extends Point {
     private float angleToNextPoint;
 
     public LevelPoint(Point p, Type type) {
-        super(p);
-        this.type = type;
+        this(p, type, null);
     }
 
     public LevelPoint(int x, int y, Type type) {
-        super(x, y);
+        this(new Point(x, y), type, null);
+    }
+
+    public LevelPoint(Point p, Type type, LevelZone levelZone) {
+        super(p);
         this.type = type;
+        this.levelZone = levelZone;
     }
 
     public void setAngleToNextPoint(float angleToNextPoint) {
