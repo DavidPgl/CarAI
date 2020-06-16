@@ -21,10 +21,19 @@ import java.util.stream.Collectors;
  */
 public class LevelGraph {
     private static final int OBSTACLE_OFFSET = 20;
-    private static final int ZONE_OFFSET = -20;
-    private static final int AREA_POINT_INTERVAL = 12;
-    private static final float SLOW_AREA_WEIGHT_FACTOR = 4;
-    private static final float FAST_AREA_WEIGHT_FACTOR = 0.5f;
+    private static final int FAST_ZONE_OFFSET = -15;
+    private static final int SLOW_ZONE_OFFSET = 0;
+    private static final int OUTER_SLOW_ZONE_OFFSET = 8;
+
+    private static final int FAST_ZONE_POINT_INTERVAL = 12;
+    private static final int SLOW_ZONE_POINT_INTERVAL = 15;
+
+    private static final float ZONE_COLLISION_OFFSET = -2f;
+    private static final float OBSTACLE_COLLISION_OFFSET = -2f;
+
+    private static final float SLOW_ZONE_WEIGHT_FACTOR = 6;
+    private static final float SLOW_POINT_TOLL = 30;
+    private static final float FAST_ZONE_WEIGHT_FACTOR = 0.5f;
 
     private final Graph<LevelPoint> graph = new Graph<>();
     private final OffsetPolygon[] offsetObstacles;
@@ -39,21 +48,29 @@ public class LevelGraph {
         this.ai = ai;
         this.offsetObstacles = generateOffsetPolygons(track.getObstacles(), OBSTACLE_OFFSET);
 
-        offsetFastZones = generateOffsetPolygons(track.getFastZones(), ZONE_OFFSET);
-        offsetSlowZones = generateOffsetPolygons(track.getSlowZones(), ZONE_OFFSET);
+        offsetFastZones = generateOffsetPolygons(track.getFastZones(), FAST_ZONE_OFFSET);
+        offsetSlowZones = generateOffsetPolygons(track.getSlowZones(), SLOW_ZONE_OFFSET);
 
         addObstacleVerticesToGraph(offsetObstacles);
-        addSpecialZoneVerticesToGraph(offsetFastZones, LevelZone.ZoneType.FAST_ZONE);
-        addSpecialZoneVerticesToGraph(offsetSlowZones, LevelZone.ZoneType.SLOW_ZONE);
+        addZoneVerticesToGraph(offsetFastZones, LevelZone.ZoneType.FAST_ZONE);
+        addZoneVerticesToGraph(offsetSlowZones, LevelZone.ZoneType.SLOW_ZONE);
+
+        // Add outer vertices for slow zones
+        OffsetPolygon[] outerOffsetSlowZone = generateOffsetPolygons(track.getSlowZones(), OUTER_SLOW_ZONE_OFFSET);
+        addZoneVerticesToGraph(outerOffsetSlowZone, null);
+
         addFreeEdges();
     }
 
     public void updateCarAndCP(LevelPoint carPosition, LevelPoint checkpointPosition) {
-        Vertex<LevelPoint> point = graph.add(carPosition);
-        addFreeEdgesForVertex(point);
-        addFreeEdgesForVertex(graph.add(checkpointPosition));
-
-
+        Vertex<LevelPoint> carPoint = graph.add(carPosition);
+        Vertex<LevelPoint> checkPoint = graph.add(checkpointPosition);
+        ai.addDebugAction(() -> {
+            carPoint.getEdges().forEach(edge -> GLUtil.drawLine(carPoint.getData(), edge.getTo().getData(), Color.GREEN));
+            carPoint.getEdges().forEach(edge -> edge.getTo().getEdges().forEach(innerEdge -> GLUtil.drawLine(edge.getTo().getData(), innerEdge.getTo().getData(), Color.GREEN)));
+        });
+        addFreeEdgesForVertex(carPoint);
+        addFreeEdgesForVertex(checkPoint);
     }
 
     public List<Vertex<LevelPoint>> getVertices() {
@@ -73,11 +90,6 @@ public class LevelGraph {
      */
     public List<LevelPoint> getPath(LevelPoint start, LevelPoint goal) {
         List<Vertex<LevelPoint>> cheapestPath = graph.getCheapestPath(start, goal);
-
-        Vertex<LevelPoint> point = cheapestPath.get(0);
-        ai.addDebugAction(() -> {
-            point.getEdges().forEach(edge -> GLUtil.drawLine(point.getData(), edge.getTo().getData(), Color.GREEN));
-        });
 
         List<Point> tempPath = cheapestPath.stream()
                 .map(Vertex::getData)
@@ -162,7 +174,7 @@ public class LevelGraph {
                     continue;
 
                 // Remove corner point if in special area
-                if (isPointInSpecialArea(current))
+                if (isPointInZone(current))
                     continue;
 
                 graph.add(new LevelPoint(current, LevelPoint.Type.ROUTE_POINT));
@@ -178,34 +190,56 @@ public class LevelGraph {
 
     private void addFreeEdgesForVertex(Vertex<LevelPoint> currentVertex) {
         for (Vertex<LevelPoint> nextVertex : graph.getVertices()) {
-            // Skip same Vertex
+
+            if (nextVertex.getData().type == LevelPoint.Type.CHECKPOINT)
+                System.out.println("Test");
+
+            // Skip same Vertex.
             if (nextVertex.equals(currentVertex))
                 continue;
 
-            // If any obstacle is intersected, skip
-            if (checkForIntersection(currentVertex.getData(), nextVertex.getData(), offsetObstacles, -3f))
+            // If any obstacle is intersected, skip.
+            if (checkForIntersection(currentVertex.getData(), nextVertex.getData(), offsetObstacles, OBSTACLE_COLLISION_OFFSET))
                 continue;
 
-            if (checkForIntersection(currentVertex.getData(), nextVertex.getData(), offsetSlowZones, -1.1f) ||
-                    checkForIntersection(currentVertex.getData(), nextVertex.getData(), offsetFastZones, -1.1f)) {
-                if ((currentVertex.getData().levelZone == null && nextVertex.getData().levelZone == null))
-                    continue;
-                if (currentVertex.getData().levelZone != nextVertex.getData().levelZone)
-                    continue;
+            // Check for checkpoint in zone, if so, always add edge.
+            if (nextVertex.getData().type == LevelPoint.Type.CHECKPOINT) {
+                if (isPointInZone((currentVertex.getData())))
+                    addFreeEdge(currentVertex, nextVertex);
+                continue;
             }
 
-
-            LevelPoint currentLevelPoint = currentVertex.getData();
-            double weight = currentVertex.getData().distance(nextVertex.getData());
-            if (currentLevelPoint.levelZone != null && currentLevelPoint.levelZone == nextVertex.getData().levelZone) {
-                if (currentLevelPoint.levelZone.zoneType == LevelZone.ZoneType.FAST_ZONE)
-                    weight = weight * FAST_AREA_WEIGHT_FACTOR;
-                else if (currentLevelPoint.levelZone.zoneType == LevelZone.ZoneType.SLOW_ZONE)
-                    weight = weight * SLOW_AREA_WEIGHT_FACTOR;
+            // Check for intersection, if not, add edge.
+            if (!checkForIntersection(currentVertex.getData(), nextVertex.getData(), offsetSlowZones, ZONE_COLLISION_OFFSET) &&
+                    !checkForIntersection(currentVertex.getData(), nextVertex.getData(), offsetFastZones, ZONE_COLLISION_OFFSET)) {
+                addFreeEdge(currentVertex, nextVertex);
+                continue;
             }
-            graph.addEdge(currentVertex.getData(), nextVertex.getData(), (int) weight);
-            graph.addEdge(nextVertex.getData(), currentVertex.getData(), (int) weight);
+
+            // Prevent edges that would go through zones.
+            if ((currentVertex.getData().levelZone == null && nextVertex.getData().levelZone == null))
+                continue;
+
+            // Allow edge if inside same zone.
+            if (currentVertex.getData().levelZone == nextVertex.getData().levelZone)
+                addFreeEdge(currentVertex, nextVertex);
         }
+    }
+
+    private void addFreeEdge(Vertex<LevelPoint> currentVertex, Vertex<LevelPoint> nextVertex) {
+        LevelPoint currentLevelPoint = currentVertex.getData();
+        double weight = currentVertex.getData().distance(nextVertex.getData());
+        if (currentLevelPoint.levelZone != null && currentLevelPoint.levelZone == nextVertex.getData().levelZone) {
+            if (currentLevelPoint.levelZone.zoneType == LevelZone.ZoneType.FAST_ZONE)
+                weight = weight * FAST_ZONE_WEIGHT_FACTOR;
+            else if (currentLevelPoint.levelZone.zoneType == LevelZone.ZoneType.SLOW_ZONE)
+                weight = weight * SLOW_ZONE_WEIGHT_FACTOR;
+        } else if (currentLevelPoint.levelZone == null && nextVertex.getData().levelZone != null &&
+                nextVertex.getData().levelZone.zoneType == LevelZone.ZoneType.SLOW_ZONE) {
+            weight += SLOW_POINT_TOLL;
+        }
+        graph.addEdge(currentVertex.getData(), nextVertex.getData(), (int) weight);
+        graph.addEdge(nextVertex.getData(), currentVertex.getData(), (int) weight);
     }
 
     private boolean checkForIntersection(Point first, Point second, OffsetPolygon[] offsetPolygons, float offsetFactor) {
@@ -227,25 +261,26 @@ public class LevelGraph {
         return false;
     }
 
-    private void addSpecialZoneVerticesToGraph(Polygon[] polygons, LevelZone.ZoneType zoneType) {
+    private void addZoneVerticesToGraph(Polygon[] polygons, LevelZone.ZoneType zoneType) {
         for (Polygon polygon : polygons) {
+            LevelZone zone = zoneType != null ? new LevelZone(zoneType) : null;
             for (int i = 0; i < polygon.npoints; i++) {
                 Point current = new Point(polygon.xpoints[i], polygon.ypoints[i]);
                 Point next = new Point(polygon.xpoints[(i + 1) % polygon.npoints], polygon.ypoints[(i + 1) % polygon.npoints]);
 
-                LevelZone area = new LevelZone(zoneType);
-                int numberOfPoints = (int) (current.distance(next) / AREA_POINT_INTERVAL);
-                Vector2f offset = VectorUtil.scale(VectorUtil.vectorFromPoints(current, next).normalise(null), AREA_POINT_INTERVAL);
+                int interval = zoneType == LevelZone.ZoneType.FAST_ZONE ? FAST_ZONE_POINT_INTERVAL : SLOW_ZONE_POINT_INTERVAL;
+                int numberOfPoints = (int) (current.distance(next) / interval);
+                Vector2f offset = VectorUtil.scale(VectorUtil.vectorFromPoints(current, next).normalise(null), interval);
                 for (int j = 0; j < numberOfPoints; j++) {
                     Point p = new Point(current.x + (int) (offset.x * j), current.y + (int) (offset.y * j));
-                    LevelPoint levelPoint = new LevelPoint(p, LevelPoint.Type.ROUTE_POINT, area);
+                    LevelPoint levelPoint = new LevelPoint(p, LevelPoint.Type.ROUTE_POINT, zone);
                     graph.add(levelPoint);
                 }
             }
         }
     }
 
-    private boolean isPointInSpecialArea(Point point) {
+    private boolean isPointInZone(Point point) {
         for (Polygon fastZone : track.getFastZones())
             if (fastZone.contains(point))
                 return true;

@@ -4,6 +4,7 @@ import lenz.htw.ai4g.ai.Info;
 import org.lwjgl.util.vector.Vector2f;
 import s0564478.CarAI;
 import s0564478.navigation.LevelPoint;
+import s0564478.navigation.LevelZone;
 
 import java.awt.*;
 
@@ -27,6 +28,10 @@ public class ThrottleBehaviour {
             previousRoutePoint = currentRoutePoint;
             currentRoutePoint = nextRoutePoint;
         }
+
+        if (currentRoutePoint.levelZone != null && currentRoutePoint.levelZone.zoneType == LevelZone.ZoneType.FAST_ZONE &&
+                previousRoutePoint.levelZone == null)
+            return info.getMaxAbsoluteAcceleration();
 
         if (!isPreviousPointOutOfRange())
             return getAngularThrottle(currentRoutePoint);

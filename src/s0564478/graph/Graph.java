@@ -47,7 +47,7 @@ public final class Graph<T> {
         Vertex<T> vertexTo = getVertexFromData(to);
 
         if (vertexFrom == null || vertexTo == null)
-            return null;
+            throw new RuntimeException("'VertexFrom' and 'VertexTo' must be defined.");
 
         vertices.forEach((vertex) -> minWeights.put(vertex, Double.POSITIVE_INFINITY));
 
@@ -82,7 +82,7 @@ public final class Graph<T> {
 
         // Check if we actually reached the goal
         if (!connectedVertices.contains(vertexTo))
-            return null;
+            throw new RuntimeException("Could not generate path. Graph does not contain 'vertexTo'.\nVertex: " + vertexTo.getData());
 
         List<Vertex<T>> path = new ArrayList<>();
 
