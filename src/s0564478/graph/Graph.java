@@ -82,7 +82,8 @@ public final class Graph<T> {
 
         // Check if we actually reached the goal
         if (!connectedVertices.contains(vertexTo))
-            throw new RuntimeException("Could not generate path. Graph does not contain 'vertexTo'.\nVertex: " + vertexTo.getData());
+            throw new RuntimeException("Could not generate path. Graph does not contain 'vertexTo'.\nVertex: " +
+                    vertexTo.getData());
 
         List<Vertex<T>> path = new ArrayList<>();
 
@@ -97,7 +98,7 @@ public final class Graph<T> {
         return path;
     }
 
-    private Vertex<T> getVertexFromData(T vertexData) {
+    public Vertex<T> getVertexFromData(T vertexData) {
         for (Vertex<T> vertex : vertices)
             if (vertex.getData().equals(vertexData))
                 return vertex;

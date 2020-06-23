@@ -4,7 +4,7 @@ import java.awt.*;
 
 public class LevelPoint extends Point {
     public final Type type;
-    public final LevelZone levelZone;
+    public LevelZone levelZone;
 
     /**
      * Angle between 0 and pi (radians)

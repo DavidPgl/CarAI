@@ -7,6 +7,7 @@ import org.lwjgl.util.vector.Vector2f;
 import s0564478.behaviour.BehaviourStats;
 import s0564478.behaviour.SteeringBehaviour;
 import s0564478.behaviour.ThrottleBehaviour;
+import s0564478.graph.Vertex;
 import s0564478.navigation.LevelGraph;
 import s0564478.navigation.LevelPoint;
 import s0564478.util.GLUtil;
@@ -14,6 +15,7 @@ import s0564478.util.GLUtil;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CarAI extends AI {
     private final ThrottleBehaviour throttleBehaviour;
@@ -107,6 +109,15 @@ public class CarAI extends AI {
             addDebugAction(() -> GLUtil.drawLine(inBetween.getX() - 5, inBetween.getY() - 5, inBetween.getX() + 5, inBetween.getY() + 5, Color.MAGENTA));
         }
         currentRoute.remove(0);
+
+        addDebugAction(() -> {
+            List<LevelPoint> points = currentRoute.stream().filter(point -> point.type != LevelPoint.Type.STEP_POINT).collect(Collectors.toList());
+            if (points.size() < 1)
+                return;
+            Vertex<LevelPoint> vertex = levelGraph.getVertexFromPoint(points.get(0));
+            vertex.getEdges().forEach(edge ->
+                    GLUtil.drawLine(vertex.getData(), edge.getTo().getData(), Color.GREEN));
+        });
     }
 
 

@@ -15,7 +15,7 @@ public final class BehaviourStats {
     }
 
     public static final class RoutePoint {
-        public static final float GOAL_DISTANCE = 15f;
+        public static final float GOAL_DISTANCE = 18f;
         public static final float DECELERATE_DISTANCE = 30f;
         public static final float THROTTLE_TIME = 1f;
     }
