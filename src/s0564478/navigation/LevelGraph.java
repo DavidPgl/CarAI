@@ -31,7 +31,7 @@ public class LevelGraph {
     private static final float OBSTACLE_COLLISION_OFFSET = -2f;
 
     private static final float SLOW_ZONE_WEIGHT_FACTOR = 6;
-    private static final float SLOW_POINT_TOLL = 50; // TODO: Not working atm.
+    private static final float SLOW_POINT_TOLL = 50;
     private static final float FAST_ZONE_WEIGHT_FACTOR = 0.5f;
 
     private final Graph<LevelPoint> graph = new Graph<>();
@@ -93,7 +93,7 @@ public class LevelGraph {
         return graph.getVertexFromData(levelPoint);
     }
 
-    public List<Point> getVerticesPoints() {
+    public List<LevelPoint> getVerticesPoints() {
         return graph.getVertices().stream().map(Vertex::getData).collect(Collectors.toList());
     }
 
@@ -221,18 +221,20 @@ public class LevelGraph {
 
     private void addFreeEdge(Vertex<LevelPoint> currentVertex, Vertex<LevelPoint> nextVertex) {
         LevelPoint currentLevelPoint = currentVertex.getData();
-        double weight = currentVertex.getData().distance(nextVertex.getData());
-        if (currentLevelPoint.levelZone != null && currentLevelPoint.levelZone == nextVertex.getData().levelZone) {
+        LevelPoint nextLevelPoint = nextVertex.getData();
+        double weight = currentLevelPoint.distance(nextLevelPoint);
+        if (currentLevelPoint.levelZone != null && currentLevelPoint.levelZone == nextLevelPoint.levelZone) {
             if (currentLevelPoint.levelZone.zoneType == LevelZone.ZoneType.FAST_ZONE)
                 weight = weight * FAST_ZONE_WEIGHT_FACTOR;
             else if (currentLevelPoint.levelZone.zoneType == LevelZone.ZoneType.SLOW_ZONE)
                 weight = weight * SLOW_ZONE_WEIGHT_FACTOR;
-        } else if ((currentLevelPoint.levelZone != nextVertex.getData().levelZone) && // TODO: CHECK IF CORRECT
-                nextVertex.getData().levelZone != null && nextVertex.getData().levelZone.zoneType == LevelZone.ZoneType.SLOW_ZONE) {
+        } else if (currentLevelPoint.levelZone != nextLevelPoint.levelZone &&
+                ((nextLevelPoint.levelZone != null && nextLevelPoint.levelZone.zoneType == LevelZone.ZoneType.SLOW_ZONE) ||
+                        (currentLevelPoint.levelZone != null && currentLevelPoint.levelZone.zoneType == LevelZone.ZoneType.SLOW_ZONE))) {
             weight += SLOW_POINT_TOLL;
         }
-        graph.addEdge(currentVertex.getData(), nextVertex.getData(), (int) weight);
-        graph.addEdge(nextVertex.getData(), currentVertex.getData(), (int) weight);
+        graph.addEdge(currentLevelPoint, nextLevelPoint, (int) weight);
+        graph.addEdge(nextLevelPoint, currentLevelPoint, (int) weight);
     }
 
     private boolean checkForIntersection(Point first, Point second, OffsetPolygon[] offsetPolygons,
